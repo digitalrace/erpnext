@@ -1,0 +1,214 @@
+// ============================================================
+// PPGPL - Firebase FCM for ERPNext Web / PWA
+// ============================================================
+
+(function () {
+    "use strict";
+
+    // ------------------------------------------------------------
+    // Firebase Configuration
+    // ------------------------------------------------------------
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyASR6kiw3C07OIGiHvru3vDSShOsXgFae8",
+        authDomain: "push-notification-39f4b.firebaseapp.com",
+        projectId: "push-notification-39f4b",
+        storageBucket: "push-notification-39f4b.firebasestorage.app",
+        messagingSenderId: "899078972772",
+        appId: "1:899078972772:web:4e82e4c7e65209765a4671",
+        measurementId: "G-XQVRWB7BGV"
+    };
+
+    // ------------------------------------------------------------
+    // VAPID Key
+    // Firebase Console → Project Settings
+    // → Cloud Messaging
+    // → Web Push certificates
+    // ------------------------------------------------------------
+
+    const VAPID_KEY = "BBCen7sO_G3BproaO7yeRJHbAEq3ArR7jit0HMwOS-IY9bbMdVHR11FvYGyMbjgn3vb4uKmVu1CXI4ulShyd9ds";
+
+    // ------------------------------------------------------------
+    // Load Firebase
+    // ------------------------------------------------------------
+
+    if (typeof firebase === "undefined") {
+        console.error("Firebase SDK is not loaded.");
+        return;
+    }
+
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+
+    const messaging = firebase.messaging();
+
+    // ------------------------------------------------------------
+    // Register Service Worker
+    // ------------------------------------------------------------
+
+    async function registerServiceWorker() {
+        if (!("serviceWorker" in navigator)) {
+            console.error("Service Worker is not supported.");
+            return null;
+        }
+
+        try {
+            const registration =
+                await navigator.serviceWorker.register(
+                    "/assets/ppg_dashboard/js/firebase-messaging-sw.js"
+                );
+
+            console.log("FCM: Service Worker registered");
+
+            return registration;
+
+        } catch (error) {
+            console.error(
+                "FCM: Service Worker registration failed:",
+                error
+            );
+
+            return null;
+        }
+    }
+
+    // ------------------------------------------------------------
+    // Request Notification Permission
+    // ------------------------------------------------------------
+
+    async function requestNotificationPermission() {
+
+        if (!("Notification" in window)) {
+            console.error("Browser does not support notifications.");
+            return;
+        }
+
+        try {
+
+            const permission =
+                await Notification.requestPermission();
+
+            console.log(
+                "FCM Notification Permission:",
+                permission
+            );
+
+            if (permission !== "granted") {
+                console.log("Notification permission not granted.");
+                return;
+            }
+
+            await initializeFCM();
+
+        } catch (error) {
+            console.error(
+                "Notification permission error:",
+                error
+            );
+        }
+    }
+
+    // ------------------------------------------------------------
+    // Initialize FCM
+    // ------------------------------------------------------------
+
+    async function initializeFCM() {
+
+        try {
+
+            const registration =
+                await registerServiceWorker();
+
+            if (!registration) {
+                return;
+            }
+
+            const token = await messaging.getToken({
+                vapidKey: VAPID_KEY,
+                serviceWorkerRegistration: registration
+            });
+
+            if (!token) {
+                console.error("FCM token was not generated.");
+                return;
+            }
+
+            console.log("FCM TOKEN:", token);
+
+            // ----------------------------------------------------
+            // Register token in ERPNext
+            // ----------------------------------------------------
+
+            const response = await frappe.call({
+                method: "ppg_dashboard.fcm.register_fcm_token",
+
+                args: {
+                    token: token,
+
+                    // IMPORTANT:
+                    // Frappe DocType accepts Web, not PWA
+                    device_type: "Web",
+
+                    device_id: navigator.userAgent
+                }
+            });
+
+            console.log(
+                "FCM registration response:",
+                response
+            );
+
+        } catch (error) {
+
+            console.error(
+                "FCM registration failed:",
+                error
+            );
+        }
+    }
+
+    // ------------------------------------------------------------
+    // Foreground Notification
+    // ------------------------------------------------------------
+
+    messaging.onMessage(function (payload) {
+
+        console.log(
+            "FCM foreground message:",
+            payload
+        );
+
+        const title =
+            payload.notification?.title ||
+            "PPGPL ERP";
+
+        const body =
+            payload.notification?.body ||
+            "";
+
+        if (
+            Notification.permission === "granted"
+        ) {
+
+            new Notification(title, {
+                body: body,
+                icon: "/assets/ppg_dashboard/images/logo.png"
+            });
+        }
+    });
+
+    // ------------------------------------------------------------
+    // Start
+    // ------------------------------------------------------------
+
+    if (
+        window.frappe &&
+        frappe.session &&
+        frappe.session.user &&
+        frappe.session.user !== "Guest"
+    ) {
+        requestNotificationPermission();
+    }
+
+})();

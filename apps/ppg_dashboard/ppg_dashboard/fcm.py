@@ -1,0 +1,441 @@
+import json
+
+import frappe
+import firebase_admin
+
+from firebase_admin import credentials, messaging
+
+
+FIREBASE_CREDENTIALS = (
+    "/home/frappe/firebase/firebase-service-account.json"
+)
+
+
+# ============================================================
+# FIREBASE
+# ============================================================
+
+def get_firebase_app():
+
+    try:
+        return firebase_admin.get_app()
+
+    except ValueError:
+
+        cred = credentials.Certificate(
+            FIREBASE_CREDENTIALS
+        )
+
+        return firebase_admin.initialize_app(
+            cred
+        )
+
+
+# ============================================================
+# DEVICE TOKEN REGISTRATION
+# ============================================================
+
+@frappe.whitelist()
+def register_fcm_token(
+    token,
+    device_type="Web",
+    device_id=None
+):
+
+    if not token:
+        frappe.throw(
+            "FCM token is required."
+        )
+
+    allowed_types = {
+        "Android",
+        "iOS",
+        "Web",
+        "PWA"
+    }
+
+    if device_type not in allowed_types:
+        frappe.throw(
+            "Invalid device type."
+        )
+
+    user = frappe.session.user
+
+    if not user or user == "Guest":
+        frappe.throw(
+            "Login is required."
+        )
+
+    filters = {
+        "user": user,
+        "fcm_token": token
+    }
+
+    existing_name = frappe.db.exists(
+        "FCM Device Token",
+        filters
+    )
+
+    if existing_name:
+
+        doc = frappe.get_doc(
+            "FCM Device Token",
+            existing_name
+        )
+
+        doc.device_type = device_type
+        doc.device_id = device_id
+        doc.active = 1
+        doc.save(
+            ignore_permissions=True
+        )
+
+    else:
+
+        doc = frappe.get_doc({
+            "doctype":
+                "FCM Device Token",
+
+            "user":
+                user,
+
+            "fcm_token":
+                token,
+
+            "device_type":
+                device_type,
+
+            "device_id":
+                device_id,
+
+            "active":
+                1
+        })
+
+        doc.insert(
+            ignore_permissions=True
+        )
+
+    frappe.db.commit()
+
+    return {
+        "success": True,
+        "message":
+            "FCM token registered successfully."
+    }
+
+
+# ============================================================
+# GET USER TOKENS
+# ============================================================
+
+def get_user_tokens(user):
+
+    return frappe.get_all(
+        "FCM Device Token",
+
+        filters={
+            "user": user,
+            "active": 1
+        },
+
+        fields=[
+            "name",
+            "fcm_token",
+            "device_type",
+            "device_id"
+        ]
+    )
+
+
+# ============================================================
+# DEACTIVATE TOKEN
+# ============================================================
+
+def deactivate_token(name):
+
+    frappe.db.set_value(
+        "FCM Device Token",
+        name,
+        "active",
+        0
+    )
+
+
+# ============================================================
+# SEND ONE NOTIFICATION
+# ============================================================
+
+def send_push_to_token(
+    token,
+    title,
+    body,
+    link=None,
+    data=None
+):
+
+    get_firebase_app()
+
+    payload_data = {}
+
+    if data:
+        payload_data.update(
+            {
+                str(k): str(v)
+                for k, v in data.items()
+            }
+        )
+
+    if link:
+        payload_data["link"] = link
+
+    message = messaging.Message(
+
+        notification=messaging.Notification(
+            title=title,
+            body=body
+        ),
+
+        data=payload_data,
+
+        webpush=(
+            messaging.WebpushConfig(
+                fcm_options=messaging.WebpushFCMOptions(
+                    link=link
+                )
+            )
+            if link
+            else None
+        ),
+
+        token=token
+    )
+
+    return messaging.send(
+        message
+    )
+
+
+# ============================================================
+# SEND TO USER
+# ============================================================
+
+def send_push_to_user(
+    user,
+    title,
+    body,
+    link=None,
+    data=None
+):
+
+    tokens = get_user_tokens(user)
+
+    if not tokens:
+        return {
+            "success": False,
+            "sent": 0,
+            "failed": 0
+        }
+
+    get_firebase_app()
+
+    messages = []
+
+    for row in tokens:
+
+        payload_data = {}
+
+        if data:
+            payload_data.update(
+                {
+                    str(k): str(v)
+                    for k, v in data.items()
+                }
+            )
+
+        if link:
+            payload_data["link"] = link
+
+        messages.append(
+            messaging.Message(
+                notification=messaging.Notification(
+                    title=title,
+                    body=body
+                ),
+                data=payload_data,
+                webpush=(
+                    messaging.WebpushConfig(
+                        fcm_options=messaging.WebpushFCMOptions(
+                            link=link
+                        )
+                    )
+                    if link
+                    else None
+                ),
+                token=row.fcm_token
+            )
+        )
+
+    response = messaging.send_each(messages)
+
+    sent = 0
+    failed = 0
+
+    for index, result in enumerate(response.responses):
+
+        row = tokens[index]
+
+        if result.success:
+
+            sent += 1
+
+        else:
+
+            failed += 1
+
+            error = result.exception
+
+            error_code = getattr(
+                error,
+                "code",
+                ""
+            )
+
+            if error_code in {
+                "UNREGISTERED",
+                "INVALID_ARGUMENT"
+            }:
+
+                deactivate_token(row.name)
+
+            frappe.log_error(
+                title="FCM Send Error",
+                message=(
+                    f"User: {user}\n"
+                    f"Token Doc: {row.name}\n"
+                    f"Error: {error}"
+                )
+            )
+
+    frappe.db.commit()
+
+    return {
+        "success": sent > 0,
+        "sent": sent,
+        "failed": failed
+    }
+
+
+# NOTIFICATION LOG
+# ============================================================
+
+def notification_log_after_insert(
+    doc,
+    method=None
+):
+
+    try:
+
+        user = doc.for_user
+
+        if not user or user == "Guest":
+            return
+
+        subject = (
+            doc.subject
+            or "PPGPL ERP"
+        )
+
+        body = (
+            doc.email_content
+            or subject
+            or "New notification"
+        )
+
+        link = doc.link or None
+
+        data = {
+            "document_type":
+                doc.document_type or "",
+
+            "document_name":
+                doc.document_name or ""
+        }
+
+        send_push_to_user(
+            user=user,
+            title=subject,
+            body=body,
+            link=link,
+            data=data
+        )
+
+    except Exception:
+
+        frappe.log_error(
+            title=
+                f"FCM Notification Error - {doc.for_user}",
+
+            message=
+                frappe.get_traceback()
+        
+        )
+
+@frappe.whitelist()
+def deactivate_current_fcm_token(token):
+
+    if not token:
+        return {
+            "success": False,
+            "message": "FCM token is required."
+        }
+
+    user = frappe.session.user
+
+    if not user or user == "Guest":
+        return {
+            "success": False,
+            "message": "No logged-in user."
+        }
+
+    token_name = frappe.db.get_value(
+        "FCM Device Token",
+        {
+            "user": user,
+            "fcm_token": token,
+            "active": 1
+        },
+        "name"
+    )
+
+    if not token_name:
+        return {
+            "success": False,
+            "message": "Active FCM token not found."
+        }
+
+    frappe.db.set_value(
+        "FCM Device Token",
+        token_name,
+        "active",
+        0
+    )
+
+    frappe.db.commit()
+
+    active = frappe.db.get_value(
+        "FCM Device Token",
+        token_name,
+        "active"
+    )
+
+    return {
+        "success": active == 0,
+        "message": (
+            "FCM token deactivated."
+            if active == 0
+            else "FCM token could not be deactivated."
+        ),
+        "token_name": token_name,
+        "active": active
+    }

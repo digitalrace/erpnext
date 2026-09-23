@@ -1,0 +1,54 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Node
+node_modules/
+.npm/
+.yarn/
+.pnpm-store/
+
+# Build/cache
+dist/
+build/
+.cache/
+*.log
+
+# Frappe generated/runtime files
+sites/
+logs/
+assets/
+
+# Database / Redis
+*.sql
+*.sql.gz
+redis/
+mariadb/
+mysql/
+
+# Credentials / secrets
+firebase-service-account.json
+service-account.json
+*-service-account.json
+credentials.json
+secrets.json
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.swp
+*.bak

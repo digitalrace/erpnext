@@ -1,0 +1,28 @@
+app_name = "ppg_dashboard"
+app_title = "PPGPL Dashboard"
+app_publisher = "PPGPL"
+app_description = "Custom dashboard for PPGPL"
+app_email = "powerpartnerhq@gmail.com"
+app_license = "mit"
+
+
+doc_events = {
+    "Quotation": {
+        "on_submit": "ppg_dashboard.push_notifications.quotation_on_submit"
+    },   
+	"Stock Entry": {
+		"on_submit": "ppg_dashboard.api.kpi.check_job_card_material_shortage"
+	},
+	"Notification Log": {
+		"after_insert": "ppg_dashboard.fcm.notification_log_after_insert"
+	}
+}
+
+
+after_migrate = ["ppg_dashboard.patches.restore_hrms_patches.execute"]
+app_include_js = [
+    "https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js",
+    "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js",
+    "/assets/ppg_dashboard/js/pwa_fcm.js?v=2026081501",
+    "/assets/ppg_dashboard/js/erp_pwa.js?v=2026081501"
+]
