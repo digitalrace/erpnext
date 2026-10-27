@@ -1,0 +1,1023 @@
+{% extends "templates/web.html" %}
+{% block title %}Track Your Order | Power Partner{% endblock %}
+
+{% block page_content %}
+<style>
+body:has(.ppg-track-page) {
+    background: #f5f7f3;
+}
+body:has(.ppg-track-page) .page-content {
+    padding-top: 0 !important;
+}
+body:has(.ppg-track-page) .navbar a[href*="/login"] {
+    display: none !important;
+}
+body:has(.ppg-track-page) .web-footer {
+    background: #102f27;
+    color: #d8e6df;
+    border: 0;
+}
+body:has(.ppg-track-page) .web-footer a {
+    color: #d3ef90;
+}
+.ppg-track-page {
+    --forest: #123e32;
+    --forest2: #1a5946;
+    --lime: #d8f28a;
+    --muted: #718078;
+    --line: #e4eae4;
+    color: #1d3028;
+    font-family: inherit;
+    background:
+        radial-gradient(ellipse at 88% 3%, rgba(214,239,174,.28), transparent 28%),
+        #f5f7f3;
+    min-height: 680px;
+    padding: 42px 22px 70px;
+}
+.ppg-track-inner {
+    max-width: 1110px;
+    margin: 0 auto;
+}
+.ppg-track-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    color: #42715b;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+.ppg-track-eyebrow:before {
+    content: "";
+    width: 24px;
+    height: 2px;
+    background: #91b85b;
+}
+.ppg-track-hero {
+    display: grid;
+    grid-template-columns: 1.15fr .85fr;
+    min-height: 300px;
+    overflow: hidden;
+    border-radius: 25px;
+    background: var(--forest);
+    box-shadow: 0 18px 44px rgba(18,62,50,.14);
+}
+.ppg-track-hero-copy {
+    align-self: center;
+    padding: 44px 25px 44px 46px;
+}
+.ppg-track-hero .ppg-track-eyebrow {
+    color: #c6e69f;
+}
+.ppg-track-hero h1 {
+    color: #fff !important;
+    font-size: clamp(32px, 4vw, 47px);
+    font-weight: 750;
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+    margin: 18px 0 15px;
+}
+.ppg-track-hero p {
+    max-width: 410px;
+    color: #d1e1d9;
+    font-size: 15px;
+    line-height: 1.8;
+    margin: 0;
+}
+.ppg-track-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 24px;
+}
+.ppg-track-pill {
+    padding: 7px 11px;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 100px;
+    color: #e0eae4;
+    font-size: 11px;
+}
+.ppg-track-pill span {
+    color: #d8f28a;
+    margin-right: 5px;
+}
+.ppg-track-visual {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 280px;
+    padding: 25px;
+    background:
+        radial-gradient(circle at 65% 25%, rgba(218,242,138,.18), transparent 35%),
+        linear-gradient(135deg, #174d3e, #103629);
+}
+.ppg-track-visual:before,
+.ppg-track-visual:after {
+    content: "";
+    position: absolute;
+    border: 1px solid rgba(214,242,179,.13);
+    border-radius: 50%;
+}
+.ppg-track-visual:before {
+    width: 300px;
+    height: 300px;
+}
+.ppg-track-visual:after {
+    width: 230px;
+    height: 230px;
+}
+.ppg-track-journey-card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 310px;
+    padding: 23px;
+    border: 1px solid rgba(255,255,255,.6);
+    border-radius: 18px;
+    background: rgba(255,255,255,.96);
+    box-shadow: 0 18px 40px rgba(0,0,0,.15);
+}
+.ppg-track-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 17px;
+    border-bottom: 1px solid #e9eee7;
+}
+.ppg-track-card-top strong {
+    display: block;
+    color: #203d30;
+    font-size: 13px;
+}
+.ppg-track-card-top small {
+    color: #859188;
+    font-size: 11px;
+}
+.ppg-track-card-badge {
+    background: #edf6db;
+    color: #477037;
+    border-radius: 7px;
+    padding: 6px 9px;
+    font-size: 10px;
+    font-weight: 800;
+}
+.ppg-track-mini-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-top: 17px;
+    color: #365246;
+    font-size: 12px;
+    font-weight: 650;
+}
+.ppg-track-mini-icon {
+    display: grid;
+    place-items: center;
+    width: 31px;
+    height: 31px;
+    flex: 0 0 31px;
+    border-radius: 10px;
+    background: #edf3e9;
+    color: #27654b;
+}
+.ppg-track-mini-icon svg {
+    width: 16px;
+    height: 16px;
+}
+.ppg-track-mini-step:nth-of-type(4) .ppg-track-mini-icon {
+    background: #f5f1df;
+    color: #9a792c;
+}
+.ppg-track-search-card {
+    position: relative;
+    z-index: 2;
+    max-width: 920px;
+    margin: -27px auto 0;
+    padding: 25px 28px;
+    border: 1px solid #e7ece4;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 14px 38px rgba(33,58,43,.09);
+}
+.ppg-track-search-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    margin-bottom: 19px;
+}
+.ppg-track-search-icon {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    border-radius: 12px;
+    background: #eef5e5;
+    color: #326c4a;
+}
+.ppg-track-search-icon svg {
+    width: 20px;
+    height: 20px;
+}
+.ppg-track-search-heading h2 {
+    margin: 0 0 5px;
+    color: #20382d;
+    font-size: 20px;
+    font-weight: 750;
+}
+.ppg-track-search-heading p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+}
+.ppg-track-form {
+    display: flex;
+    gap: 10px;
+}
+.ppg-track-input-wrap {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    min-width: 0;
+    gap: 10px;
+    padding: 0 15px;
+    border: 1px solid #dbe3db;
+    border-radius: 11px;
+    background: #fbfcfa;
+    transition: border-color .2s, box-shadow .2s;
+}
+.ppg-track-input-wrap:focus-within {
+    border-color: #63956f;
+    box-shadow: 0 0 0 3px rgba(99,149,111,.13);
+}
+.ppg-track-input-wrap svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    color: #71877a;
+}
+.ppg-track-input {
+    width: 100%;
+    height: 51px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    outline: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #20382d !important;
+    font: inherit;
+    font-size: 14px !important;
+}
+.ppg-track-input::placeholder {
+    color: #9ba69e;
+}
+.ppg-track-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-height: 51px;
+    padding: 0 23px;
+    border: 0;
+    border-radius: 11px;
+    background: var(--lime);
+    color: #233b29;
+    font-size: 13px;
+    font-weight: 800;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: transform .2s, background .2s;
+}
+.ppg-track-btn:hover {
+    background: #cce978;
+    transform: translateY(-1px);
+}
+.ppg-track-btn:disabled {
+    opacity: .65;
+    cursor: wait;
+    transform: none;
+}
+.ppg-track-btn svg {
+    width: 16px;
+    height: 16px;
+}
+.ppg-track-security {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 13px;
+    color: #859188;
+    font-size: 11px;
+}
+.ppg-track-security svg {
+    width: 14px;
+    height: 14px;
+    color: #528264;
+}
+.ppg-track-message {
+    margin: 18px 0 0;
+    color: #55695d;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.ppg-track-message.error {
+    padding: 12px 14px;
+    border: 1px solid #f2d8d5;
+    border-radius: 10px;
+    background: #fff5f4;
+    color: #a33c34;
+}
+.ppg-track-message:empty {
+    display: none;
+}
+.ppg-track-result {
+    max-width: 920px;
+    margin: 24px auto 0;
+}
+.ppg-track-overview {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 22px;
+    padding: 26px 28px;
+    border: 1px solid #e1e9df;
+    border-radius: 17px;
+    background: #fff;
+}
+.ppg-track-overview-label {
+    margin-bottom: 8px;
+    color: #7b887e;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+}
+.ppg-track-overview h2 {
+    margin: 0;
+    color: #194d39;
+    font-size: clamp(23px, 3vw, 30px);
+    font-weight: 800;
+}
+.ppg-track-order-dates {
+    margin-top: 11px;
+    color: #718078;
+    font-size: 12px;
+    line-height: 1.7;
+}
+.ppg-track-percent-box {
+    min-width: 126px;
+    padding: 17px;
+    border-radius: 13px;
+    background: #f2f6ed;
+    text-align: center;
+}
+.ppg-track-percent {
+    color: #245d42;
+    font-size: 29px;
+    font-weight: 800;
+    letter-spacing: -1px;
+}
+.ppg-track-percent-label {
+    margin-top: 2px;
+    color: #7a897e;
+    font-size: 10px;
+}
+.ppg-track-progress {
+    height: 5px;
+    margin-top: 11px;
+    overflow: hidden;
+    border-radius: 10px;
+    background: #dfe8d9;
+}
+.ppg-track-progress-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: #4c9064;
+    transition: width .3s;
+}
+.ppg-track-panels {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+    gap: 18px;
+    margin-top: 18px;
+}
+.ppg-track-panel {
+    min-width: 0;
+    padding: 25px;
+    border: 1px solid #e2e8e1;
+    border-radius: 16px;
+    background: #fff;
+}
+.ppg-track-panel-heading {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin-bottom: 20px;
+}
+.ppg-track-panel-heading .ppg-track-search-icon {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    border-radius: 10px;
+}
+.ppg-track-panel-heading h3 {
+    margin: 0;
+    color: #253c30;
+    font-size: 16px;
+    font-weight: 750;
+}
+.ppg-track-panel-heading p {
+    margin: 4px 0 0;
+    color: #859188;
+    font-size: 11px;
+}
+.ppg-track-line {
+    position: relative;
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 12px;
+    padding-bottom: 25px;
+}
+.ppg-track-line:last-child {
+    padding-bottom: 0;
+}
+.ppg-track-line:not(:last-child):before {
+    content: "";
+    position: absolute;
+    top: 28px;
+    bottom: 0;
+    left: 13px;
+    width: 2px;
+    background: #e8ede7;
+}
+.ppg-track-dot {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid #e1e8df;
+    border-radius: 50%;
+    background: #f4f6f2;
+    color: #88978b;
+}
+.ppg-track-dot svg {
+    width: 14px;
+    height: 14px;
+}
+.ppg-track-line.completed .ppg-track-dot {
+    border-color: #2b7853;
+    background: #2b7853;
+    color: #fff;
+}
+.ppg-track-line.active .ppg-track-dot {
+    border: 2px solid #c6a34a;
+    background: #fff8e3;
+    color: #a17a17;
+}
+.ppg-track-line strong {
+    display: block;
+    padding-top: 4px;
+    color: #3a4e41;
+    font-size: 13px;
+}
+.ppg-track-line.completed strong {
+    color: #286345;
+}
+.ppg-track-line p {
+    margin: 7px 0 0;
+    color: #77847a;
+    font-size: 12px;
+    line-height: 1.65;
+}
+.ppg-track-date {
+    margin-top: 7px;
+    color: #829086;
+    font-size: 10px;
+}
+.ppg-track-items {
+    width: 100%;
+    border-collapse: collapse;
+}
+.ppg-track-items th {
+    padding: 10px 8px;
+    border-bottom: 1px solid #e8ede6;
+    color: #829087;
+    font-size: 10px;
+    font-weight: 800;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+.ppg-track-items td {
+    padding: 13px 8px;
+    border-bottom: 1px solid #eef1ec;
+    color: #425448;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+.ppg-track-items th:nth-child(n+2),
+.ppg-track-items td:nth-child(n+2) {
+    text-align: right;
+    white-space: nowrap;
+}
+.ppg-track-items tr:last-child td {
+    border-bottom: 0;
+}
+.ppg-track-empty {
+    max-width: 920px;
+    margin: 23px auto 0;
+    padding: 26px;
+    border: 1px dashed #d6e0d3;
+    border-radius: 15px;
+    background: rgba(255,255,255,.56);
+    text-align: center;
+}
+.ppg-track-empty-icon {
+    display: grid;
+    place-items: center;
+    width: 45px;
+    height: 45px;
+    margin: 0 auto 11px;
+    border-radius: 14px;
+    background: #eaf2e3;
+    color: #407452;
+}
+.ppg-track-empty-icon svg {
+    width: 22px;
+    height: 22px;
+}
+.ppg-track-empty strong {
+    display: block;
+    color: #43594a;
+    font-size: 13px;
+}
+.ppg-track-empty p {
+    margin: 6px 0 0;
+    color: #849087;
+    font-size: 12px;
+}
+.ppg-track-help {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-top: 30px;
+    padding: 22px 25px;
+    border: 1px solid #e2e9df;
+    border-radius: 15px;
+    background: rgba(255,255,255,.56);
+}
+.ppg-track-help strong {
+    display: block;
+    color: #304c3a;
+    font-size: 13px;
+}
+.ppg-track-help p {
+    margin: 5px 0 0;
+    color: #78867c;
+    font-size: 12px;
+    line-height: 1.6;
+}
+.ppg-track-help-tag {
+    flex-shrink: 0;
+    padding: 9px 12px;
+    border: 1px solid #dbe5d5;
+    border-radius: 9px;
+    background: #eef5e7;
+    color: #426c4b;
+    font-size: 11px;
+    font-weight: 700;
+}
+.ppg-track-bottom {
+    padding-top: 23px;
+    color: #94a097;
+    font-size: 10px;
+    text-align: center;
+}
+
+.ppg-track-production { margin-bottom:18px; }
+.ppg-track-production-grid {
+  display:grid; grid-template-columns:minmax(160px,.75fr) minmax(0,1.25fr);
+  gap:23px; align-items:stretch;
+}
+.ppg-track-production-photo {
+  display:block; width:100%; height:230px; object-fit:cover;
+  border-radius:12px; background:#edf2e9;
+}
+.ppg-track-production-placeholder {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:12px; min-height:210px; height:100%; padding:20px; text-align:center;
+  border:1px dashed #d4dfd0; border-radius:12px; background:#f6f8f2;
+  color:#7b897f; font-size:12px; line-height:1.6;
+}
+.ppg-track-prod-camera {
+  padding:7px 10px; border-radius:8px; background:#e7efdf;
+  color:#426c4b; font-size:10px; font-weight:800; letter-spacing:1px;
+}
+.ppg-track-prod-label {
+  color:#829087; font-size:10px; font-weight:800; letter-spacing:1.2px;
+}
+.ppg-track-production-info h2 {
+  margin:9px 0 10px; color:#20583e; font-size:25px; font-weight:800;
+}
+.ppg-track-prod-station { color:#718078; font-size:12px; }
+.ppg-track-prod-station strong { color:#3e5948; }
+.ppg-track-prod-status {
+  display:inline-block; margin-top:13px; padding:6px 10px;
+  border-radius:7px; background:#edf5e3; color:#426d40;
+  font-size:11px; font-weight:800;
+}
+.ppg-track-prod-qty { margin-top:18px; color:#718078; font-size:12px; }
+.ppg-track-operations {
+  margin-top:23px; padding-top:19px; border-top:1px solid #e9eee7;
+}
+.ppg-track-ops-title {
+  margin-bottom:8px; color:#53675a; font-size:11px; font-weight:800;
+}
+.ppg-track-op-row {
+  display:grid; grid-template-columns:10px minmax(0,1fr) auto;
+  gap:10px; align-items:center; padding:10px 0;
+  border-bottom:1px solid #eff2ed;
+}
+.ppg-track-op-row:last-child { border-bottom:0; }
+.ppg-track-op-dot {
+  width:8px; height:8px; border-radius:50%; background:#c9d3c8;
+}
+.ppg-track-op-dot.completed { background:#2b7853; }
+.ppg-track-op-dot.active { background:#d3a33a; box-shadow:0 0 0 3px #fbf1d6; }
+.ppg-track-op-row strong { display:block; color:#405448; font-size:12px; }
+.ppg-track-op-row small { display:block; margin-top:3px; color:#849087; font-size:10px; }
+.ppg-track-op-status { color:#7a887e; font-size:10px; }
+.ppg-track-item-cell { display:flex; align-items:center; gap:10px; min-width:150px; }
+.ppg-track-item-img,.ppg-track-item-placeholder {
+  display:grid; place-items:center; flex:0 0 42px;
+  width:42px; height:42px; border-radius:8px; object-fit:cover;
+  background:#edf3e8; color:#537553; font-size:10px; font-weight:800;
+}
+.ppg-track-item-cell > span:last-child { color:#425448; }
+.ppg-track-payment { min-width:0; }
+.ppg-track-payment-status {
+  display:inline-block; margin:-3px 0 16px; padding:7px 10px;
+  border-radius:7px; background:#edf5e3; color:#426d40;
+  font-size:11px; font-weight:800;
+}
+.ppg-track-payment-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:10px;
+}
+.ppg-track-money {
+  display:flex; flex-direction:column; gap:8px; padding:13px;
+  border:1px solid #e8eee6; border-radius:10px; background:#fafbf8;
+  min-width:0;
+}
+.ppg-track-money span { color:#7b887f; font-size:11px; }
+.ppg-track-money strong {
+  color:#304b3a; font-size:15px; overflow-wrap:anywhere;
+}
+.ppg-track-money .ppg-track-paid { color:#28744d; }
+.ppg-track-due { background:#fff8ed; border-color:#f1e2c7; }
+.ppg-track-due strong { color:#976522; }
+.ppg-track-payment-note {
+  margin:15px 0 0; color:#839087; font-size:11px; line-height:1.6;
+}
+@media(max-width:760px) {
+  .ppg-track-production-grid { grid-template-columns:1fr; gap:17px; }
+  .ppg-track-production-photo { height:auto; max-height:290px; }
+  .ppg-track-production-placeholder { min-height:150px; }
+  .ppg-track-production-info h2 { font-size:22px; }
+  .ppg-track-op-row { grid-template-columns:10px minmax(0,1fr); }
+  .ppg-track-op-status { grid-column:2; }
+  .ppg-track-money strong { font-size:13px; }
+}
+
+@media(max-width:760px) {
+    .ppg-track-page {padding: 24px 14px 45px}
+    .ppg-track-hero {grid-template-columns: 1fr}
+    .ppg-track-hero-copy {padding: 32px 26px 25px}
+    .ppg-track-hero h1 {font-size: 34px}
+    .ppg-track-visual {min-height: 240px;padding: 20px}
+    .ppg-track-visual:before {width: 240px;height: 240px}
+    .ppg-track-visual:after {width: 185px;height: 185px}
+    .ppg-track-journey-card {max-width: 330px}
+    .ppg-track-search-card {margin-top: 16px;padding: 22px 19px}
+    .ppg-track-form {flex-direction: column}
+    .ppg-track-btn {width: 100%}
+    .ppg-track-overview {grid-template-columns: 1fr;padding: 22px}
+    .ppg-track-percent-box {display: grid;grid-template-columns: auto 1fr;align-items: center;text-align: left;gap: 2px 12px}
+    .ppg-track-percent {grid-row: span 2}
+    .ppg-track-progress {grid-column: 1/-1}
+    .ppg-track-panels {grid-template-columns: 1fr}
+    .ppg-track-panel {padding: 21px}
+    .ppg-track-help {align-items: flex-start;flex-direction: column;gap: 12px;padding: 20px}
+}
+</style>
+
+<section class="ppg-track-page">
+ <div class="ppg-track-inner">
+
+  <div class="ppg-track-hero">
+   <div class="ppg-track-hero-copy">
+    <div class="ppg-track-eyebrow">POWER PARTNER · ORDER CARE</div>
+    <h1>Your order.<br>Every step, in view.</h1>
+    <p>From order confirmation to delivery and installation, see where your order stands with one simple Tracking ID.</p>
+    <div class="ppg-track-pills">
+     <div class="ppg-track-pill"><span>✓</span> No account needed</div>
+     <div class="ppg-track-pill"><span>✓</span> Simple status updates</div>
+    </div>
+   </div>
+
+   <div class="ppg-track-visual" aria-hidden="true">
+    <div class="ppg-track-journey-card">
+     <div class="ppg-track-card-top">
+      <div><strong>Your order journey</strong><small>A clearer view, at every stage</small></div>
+      <div class="ppg-track-card-badge">TRACKING</div>
+     </div>
+     <div class="ppg-track-mini-step">
+      <div class="ppg-track-mini-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 7h14v14H5zM8 7V4h8v3M8 12h8M8 16h5"/></svg></div>
+      <div>Order confirmed</div>
+     </div>
+     <div class="ppg-track-mini-step">
+      <div class="ppg-track-mini-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V9l7-6 7 6v12M9 21v-7h6v7M8 10h.01M16 10h.01"/></svg></div>
+      <div>Preparation & production</div>
+     </div>
+     <div class="ppg-track-mini-step">
+      <div class="ppg-track-mini-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h11v11H3zM14 11h4l3 3v4h-7zM7 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg></div>
+      <div>Dispatch & delivery</div>
+     </div>
+     <div class="ppg-track-mini-step">
+      <div class="ppg-track-mini-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16M6 20V9l6-5 6 5v11M9 13h6M9 16h6"/></svg></div>
+      <div>Installation & handover</div>
+     </div>
+    </div>
+   </div>
+  </div>
+
+  <div class="ppg-track-search-card">
+   <div class="ppg-track-search-heading">
+    <div class="ppg-track-search-icon">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg>
+    </div>
+    <div>
+     <h2>Find your order</h2>
+     <p>Enter the Tracking ID shared by our team. You don't need to log in.</p>
+    </div>
+   </div>
+
+   <form id="ppg-track-form" class="ppg-track-form">
+    <div class="ppg-track-input-wrap">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 4h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
+     <input id="ppg-track-id" class="ppg-track-input" type="text"
+      placeholder="Enter your PPG Tracking ID" autocomplete="off"
+      autocapitalize="characters" spellcheck="false"
+      aria-label="Tracking ID" required>
+    </div>
+    <button id="ppg-track-submit" class="ppg-track-btn" type="submit">
+     Track my order
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+   </form>
+
+   <div class="ppg-track-security">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+    Your Tracking ID is used to retrieve the progress of your order.
+   </div>
+  </div>
+
+  <div id="ppg-track-message" class="ppg-track-message" role="status" aria-live="polite"></div>
+
+  <div id="ppg-track-result" class="ppg-track-result"></div>
+
+  <div id="ppg-track-empty" class="ppg-track-empty">
+   <div class="ppg-track-empty-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/><path d="m15 17 2 2 4-4"/></svg>
+   </div>
+   <strong>Your order journey starts here</strong>
+   <p>Enter your Tracking ID above to see your latest order status and milestones.</p>
+  </div>
+
+  <div class="ppg-track-help">
+   <div>
+    <strong>Need help with your order?</strong>
+    <p>Contact the Power Partner team and keep your Tracking ID handy so we can assist you faster.</p>
+   </div>
+   <div class="ppg-track-help-tag">POWER PARTNER SUPPORT</div>
+  </div>
+
+  <div class="ppg-track-bottom">POWER PARTNER GLOBAL PVT. LTD. &nbsp; · &nbsp; ORDER TRACKING</div>
+ </div>
+</section>
+
+<script>
+(function () {
+  const form = document.getElementById("ppg-track-form");
+  if (!form || form.dataset.initialized === "1") return;
+  form.dataset.initialized = "1";
+
+  const input = document.getElementById("ppg-track-id");
+  const button = document.getElementById("ppg-track-submit");
+  const message = document.getElementById("ppg-track-message");
+  const output = document.getElementById("ppg-track-result");
+  const empty = document.getElementById("ppg-track-empty");
+  const originalButton = button.innerHTML;
+
+  function esc(value) {
+    return String(value == null ? "" : value).replace(/[&<>"']/g, function (c) {
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function iconFor(stage) {
+    if (stage.state === "completed") {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 4 4L19 6"/></svg>';
+    }
+    if (stage.state === "active") {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>';
+    }
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/></svg>';
+  }
+
+  function showOrder(data) {
+    const stages = (data.stages || []).map(function (stage) {
+      const state = ["completed", "active", "pending"].includes(stage.state)
+        ? stage.state : "pending";
+      return '<div class="ppg-track-line ' + state + '">' +
+        '<div class="ppg-track-dot">' + iconFor({state: state}) + '</div>' +
+        '<div><strong>' + esc(stage.label) + '</strong>' +
+        '<p>' + esc(stage.detail) + '</p>' +
+        (stage.date ? '<div class="ppg-track-date">' + esc(stage.date) + '</div>' : '') +
+        '</div></div>';
+    }).join("");
+
+    const items = (data.items || []).map(function (item) {
+      const image = item.image
+        ? '<img class="ppg-track-item-img" src="' + esc(item.image) +
+          '" alt="' + esc(item.item) + '" loading="lazy">'
+        : '<span class="ppg-track-item-placeholder">PP</span>';
+      return '<tr><td><div class="ppg-track-item-cell">' + image +
+        '<span>' + esc(item.item) + '</span></div></td><td>' +
+        esc(item.qty) + '</td><td>' + esc(item.delivered_qty) + '</td></tr>';
+    }).join("");
+
+    const percent = Math.max(0, Math.min(100, Number(data.delivery_percent) || 0));
+    const production = data.production || {};
+    const payment = data.payment || {};
+
+    function formatMoney(value) {
+      const currency = payment.currency || "INR";
+      try {
+        return new Intl.NumberFormat("en-IN", {
+          style: "currency",
+          currency: currency,
+          maximumFractionDigits: 2
+        }).format(Number(value) || 0);
+      } catch (e) {
+        return currency + " " + (Number(value) || 0).toFixed(2);
+      }
+    }
+
+    const photo = production.photo_url
+      ? '<img class="ppg-track-production-photo" src="' +
+        esc(production.photo_url) + '" alt="Current production stage" loading="lazy">'
+      : '<div class="ppg-track-production-placeholder">' +
+        '<span class="ppg-track-prod-camera">PHOTO</span>' +
+        '<span>Production photo will appear here when your team uploads one.</span></div>';
+
+    const operationRows = (production.operations || []).map(function (op) {
+      const state = ["completed", "active", "pending"].includes(op.state)
+        ? op.state : "pending";
+      return '<div class="ppg-track-op-row"><span class="ppg-track-op-dot ' +
+        state + '"></span><div><strong>' + esc(op.operation) +
+        '</strong><small>' + esc(op.workstation || "Workstation not assigned") +
+        '</small></div><span class="ppg-track-op-status">' +
+        esc(op.status) + '</span></div>';
+    }).join("");
+
+    const productionPanel =
+      '<section class="ppg-track-panel ppg-track-production">' +
+        '<div class="ppg-track-panel-heading">' +
+          '<div class="ppg-track-search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">' +
+          '<path d="M3 21h18M5 21V9l7-6 7 6v12M9 21v-7h6v7"/></svg></div>' +
+          '<div><h3>Live production progress</h3>' +
+          '<p>Current operation and latest customer-shareable photo</p></div>' +
+        '</div>' +
+        '<div class="ppg-track-production-grid"><div>' + photo + '</div>' +
+        '<div class="ppg-track-production-info">' +
+          '<span class="ppg-track-prod-label">CURRENT OPERATION</span>' +
+          '<h2>' + esc(production.stage || "Awaiting production planning") + '</h2>' +
+          '<div class="ppg-track-prod-station">Workstation: <strong>' +
+          esc(production.workstation || "Not assigned yet") + '</strong></div>' +
+          '<div class="ppg-track-prod-status">' + esc(production.status || "Not Started") + '</div>' +
+          '<div class="ppg-track-prod-qty">' +
+            esc(production.completed_qty || 0) + ' of ' +
+            esc(production.stage_qty || 0) + ' units completed</div>' +
+          '<div class="ppg-track-progress"><div class="ppg-track-progress-fill" style="width:' +
+            Math.max(0, Math.min(100, Number(production.progress_percent) || 0)) +
+          '%"></div></div>' +
+        '</div></div>' +
+        (operationRows ? '<div class="ppg-track-operations"><div class="ppg-track-ops-title">Production stages</div>' +
+          operationRows + '</div>' : '') +
+      '</section>';
+
+    const paymentPanel =
+      '<section class="ppg-track-panel ppg-track-payment">' +
+        '<div class="ppg-track-panel-heading">' +
+          '<div class="ppg-track-search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">' +
+          '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg></div>' +
+          '<div><h3>Payment overview</h3><p>Your order payment summary</p></div>' +
+        '</div>' +
+        '<div class="ppg-track-payment-status">' + esc(payment.status || "Payment information unavailable") + '</div>' +
+        '<div class="ppg-track-payment-grid">' +
+          '<div class="ppg-track-money"><span>Order total</span><strong>' +
+            formatMoney(payment.order_total) + '</strong></div>' +
+          '<div class="ppg-track-money"><span>Invoiced</span><strong>' +
+            formatMoney(payment.invoiced_amount) + '</strong></div>' +
+          '<div class="ppg-track-money"><span>Paid</span><strong class="ppg-track-paid">' +
+            formatMoney(payment.paid_amount) + '</strong></div>' +
+          '<div class="ppg-track-money ppg-track-due"><span>Balance due</span><strong>' +
+            formatMoney(payment.balance_due) + '</strong></div>' +
+        '</div><p class="ppg-track-payment-note">For payment or invoice queries, please contact the Power Partner team.</p>' +
+      '</section>';
+
+    output.innerHTML =
+      '<div class="ppg-track-overview"><div>' +
+      '<div class="ppg-track-overview-label">CURRENT ORDER STATUS</div>' +
+      '<h2>' + esc(data.overall_status || "Order confirmed") + '</h2>' +
+      '<div class="ppg-track-order-dates">Order date: ' + esc(data.order_date || "—") +
+      '<br>Estimated delivery: ' + esc(data.estimated_delivery_date || "Not available") +
+      '</div></div><div class="ppg-track-percent-box">' +
+      '<div class="ppg-track-percent">' + percent.toFixed(0) + '%</div>' +
+      '<div class="ppg-track-percent-label">DELIVERED</div>' +
+      '<div class="ppg-track-progress"><div class="ppg-track-progress-fill" style="width:' +
+      percent + '%"></div></div></div></div>' +
+
+      productionPanel +
+      '<div class="ppg-track-panels"><section class="ppg-track-panel">' +
+      '<div class="ppg-track-panel-heading"><div class="ppg-track-search-icon">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">' +
+      '<path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h4"/></svg></div><div>' +
+      '<h3>Order journey</h3><p>Progress from confirmation to installation</p></div></div>' +
+      (stages || '<p>No progress milestones available yet.</p>') +
+      '</section><section class="ppg-track-panel">' +
+      '<div class="ppg-track-panel-heading"><div class="ppg-track-search-icon">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">' +
+      '<path d="M4 7h16l-1 13H5L4 7ZM9 7a3 3 0 0 1 6 0M8 11v5M16 11v5"/></svg></div><div>' +
+      '<h3>Order items</h3><p>Items included in your order</p></div></div>' +
+      (items
+        ? '<div style="overflow-x:auto"><table class="ppg-track-items"><thead><tr>' +
+          '<th>Item</th><th>Quantity</th><th>Delivered</th></tr></thead><tbody>' +
+          items + '</tbody></table></div>'
+        : '<p style="color:#7b887e;font-size:12px">Item summary is not available yet.</p>') +
+      '</section>' + paymentPanel + '</div>';
+
+    empty.style.display = "none";
+    message.textContent = "";
+    message.classList.remove("error");
+    output.scrollIntoView({behavior: "smooth", block: "start"});
+  }
+
+  form.addEventListener("submit", async function (event) {
+    event.preventDefault();
+    const token = input.value.trim().toUpperCase();
+    if (!token) return;
+
+    button.disabled = true;
+    button.textContent = "Checking order…";
+    message.textContent = "";
+    message.classList.remove("error");
+    output.innerHTML = "";
+
+    try {
+      const url = "/api/method/ppg_dashboard.api.customer_tracking.get_order_tracking?tracking_id=" +
+        encodeURIComponent(token);
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {"Accept": "application/json"},
+        credentials: "same-origin"
+      });
+      const body = await response.json();
+      const data = body.message || {};
+
+      if (!response.ok || !data.found) {
+        message.textContent = data.message ||
+          "We couldn't find that Tracking ID. Please check it and try again.";
+        message.classList.add("error");
+        empty.style.display = "block";
+      } else {
+        showOrder(data);
+      }
+    } catch (error) {
+      message.textContent = "We couldn't retrieve your order right now. Please try again in a moment.";
+      message.classList.add("error");
+      empty.style.display = "block";
+    } finally {
+      button.disabled = false;
+      button.innerHTML = originalButton;
+    }
+  });
+})();
+</script>
+{% endblock %}

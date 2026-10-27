@@ -1,0 +1,54 @@
+
+(function () {
+    function addHRButton() {
+        if (!window.frappe || !frappe.user || !window.jQuery) return;
+
+        const roles = frappe.user.get_roles();
+        const isHR = (
+            roles.includes("HR Manager") ||
+            roles.includes("HR User")
+        ) && !roles.includes("System Manager");
+
+        const route = (frappe.get_route_str() || "").toLowerCase();
+        const isDeskHome = ["", "desk", "desktop"].includes(route)
+            || route.startsWith("workspace");
+
+        $("#custom-hr-btn").remove();
+
+        if (!isHR || !isDeskHome) return;
+
+        const $button = $(`
+            <div id="custom-hr-btn"
+                 style="display:flex;justify-content:center;margin:20px auto;padding:10px;">
+                <button type="button" class="btn btn-primary"
+                        style="font-size:15px;padding:10px 22px;">
+                    Open HR Dashboard
+                </button>
+            </div>
+        `);
+
+        $button.find("button").on("click", function () {
+            frappe.set_route("management-dashboard");
+        });
+
+        const $target = $("#page-desktop .layout-main-section").first()
+            .add($(".workspace-container").first()).first();
+
+        if ($target.length) {
+            $target.prepend($button);
+        } else {
+            $("body").append($button);
+        }
+    }
+
+    function scheduleButton() {
+        setTimeout(addHRButton, 1200);
+    }
+
+    $(document).ready(function () {
+        scheduleButton();
+        if (window.frappe && frappe.router) {
+            frappe.router.on("change", scheduleButton);
+        }
+    });
+})();

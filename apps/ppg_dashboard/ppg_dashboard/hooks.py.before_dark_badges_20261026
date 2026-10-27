@@ -1,0 +1,53 @@
+app_name = "ppg_dashboard"
+app_title = "PPGPL Dashboard"
+app_publisher = "PPGPL"
+app_description = "Custom dashboard for PPGPL"
+app_email = "powerpartnerhq@gmail.com"
+app_license = "mit"
+
+
+doc_events = {
+    "Sales Order": {
+        "before_insert": "ppg_dashboard.api.customer_tracking.ensure_tracking_id",
+        "before_submit": "ppg_dashboard.api.customer_tracking.ensure_tracking_id",
+    },
+    "Installation Assignment": {
+        "validate": "ppg_dashboard.api.installation_assignment.validate_assignment",
+        "on_update": "ppg_dashboard.api.installation_assignment.on_assignment_update",
+    },
+    "Installation Note": {
+        "validate": "ppg_dashboard.api.signoff_otp.validate_signoff",
+        "before_submit": "ppg_dashboard.api.signoff_otp.before_submit_signoff",
+        "on_update_after_submit": "ppg_dashboard.api.signoff_otp.on_update_after_submit_signoff",
+        "on_submit": "ppg_dashboard.api.installation_assignment.on_installation_note_submit",
+        "on_cancel": "ppg_dashboard.api.installation_assignment.on_installation_note_cancel",
+    },
+    "*": {
+        "after_insert": "ppg_dashboard.push_notifications.handle_document_event",
+        "on_update": "ppg_dashboard.push_notifications.handle_document_event",
+        "on_submit": "ppg_dashboard.push_notifications.handle_document_event",
+        "on_cancel": "ppg_dashboard.push_notifications.handle_document_event"
+    },
+
+	"Stock Entry": {
+		"on_submit": "ppg_dashboard.api.kpi.check_job_card_material_shortage"
+	},
+	"Notification Log": {
+		"after_insert": "ppg_dashboard.fcm.notification_log_after_insert"
+	}
+}
+
+
+
+scheduler_events = {
+    "cron": {
+        "*/10 * * * *": [
+            "ppg_dashboard.api.tracking.live_tracking_cron"
+        ]
+    }
+}
+
+app_include_js = ['https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js', 'https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js', '/assets/ppg_dashboard/js/pwa_fcm.js', '/assets/ppg_dashboard/js/ppg_dashboard.js', '/assets/ppg_dashboard/js/hr_btn_final.js?v=20261026role3']
+
+# Public customer order tracking page.
+website_route_rules = [{'from_route': '/track-order', 'to_route': 'track_order'}, {'from_route': '/track-order-details', 'to_route': 'track_order_details'}]

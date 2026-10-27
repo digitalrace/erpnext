@@ -1,0 +1,332 @@
+{% extends "templates/web.html" %}
+{% block title %}Order Details | Power Partner{% endblock %}
+{% block page_content %}
+<style>
+.ppg-detail-page{--forest:#123e32;--lime:#d8f28a;--muted:#758279;background:#f3f6f0;min-height:80vh;padding:34px 18px 65px;color:#20352a}
+.ppg-detail-inner{max-width:1120px;margin:auto}
+.ppg-detail-back{display:inline-flex;align-items:center;gap:8px;color:#477053;text-decoration:none!important;font-size:12px;font-weight:750;margin-bottom:22px}
+.ppg-detail-back:hover{color:#174a35}
+.ppg-detail-back svg{width:16px;height:16px}
+.ppg-detail-hero{position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:25px;align-items:center;padding:32px;border-radius:22px;background:linear-gradient(125deg,#103b2f,#1c5c44);color:#fff;box-shadow:0 16px 40px #123e321c}
+.ppg-detail-hero:after{content:"";position:absolute;width:260px;height:260px;right:100px;top:-165px;border:1px solid #ffffff12;border-radius:50%;box-shadow:0 0 0 35px #ffffff06,0 0 0 72px #ffffff04;pointer-events:none}
+.ppg-detail-eyebrow{color:#c6e79e;font-size:10px;font-weight:800;letter-spacing:1.7px}
+.ppg-detail-hero h1{margin:12px 0 8px;color:#fff!important;font-size:clamp(27px,3.4vw,39px);line-height:1.15;letter-spacing:-1px}
+.ppg-detail-hero p{margin:0;color:#d2e4da;font-size:12px;line-height:1.7}
+.ppg-detail-token{position:relative;z-index:1;padding:16px 18px;border:1px solid #ffffff35;border-radius:12px;background:#ffffff0c;min-width:190px}
+.ppg-detail-token small{display:block;color:#c1dace;font-size:9px;font-weight:800;letter-spacing:1px}
+.ppg-detail-token strong{display:block;margin-top:7px;color:#fff;font-size:13px;overflow-wrap:anywhere}
+.ppg-detail-statusbar{display:grid;grid-template-columns:minmax(0,1fr) 180px;gap:20px;align-items:center;margin-top:18px;padding:23px 25px;background:#fff;border:1px solid #e1e8de;border-radius:16px}
+.ppg-detail-label{color:#7d897f;font-size:10px;font-weight:800;letter-spacing:1.3px}
+.ppg-detail-statusbar h2{margin:8px 0;color:#1c563c;font-size:27px;font-weight:800}
+.ppg-detail-date{color:#7a877d;font-size:12px;line-height:1.8}
+.ppg-detail-progressbox{padding:16px;border-radius:12px;background:#f0f5e9}
+.ppg-detail-percent{color:#255b3b;font-size:29px;font-weight:850;letter-spacing:-1px}
+.ppg-detail-percent-caption{color:#80907d;font-size:9px;font-weight:800;letter-spacing:.7px}
+.ppg-detail-progress{height:6px;margin-top:11px;background:#dce7d5;border-radius:10px;overflow:hidden}
+.ppg-detail-progress-fill{height:100%;background:#43885b;border-radius:inherit}
+.ppg-detail-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:15px}
+.ppg-detail-stat{padding:18px 20px;border:1px solid #e2e9df;border-radius:14px;background:#fff;min-width:0}
+.ppg-detail-stat-label{color:#839087;font-size:10px;font-weight:800;letter-spacing:.7px}
+.ppg-detail-stat-value{margin-top:9px;color:#2c4635;font-size:18px;font-weight:800;overflow-wrap:anywhere}
+.ppg-detail-stat-hint{margin-top:5px;color:#859087;font-size:11px}
+.ppg-detail-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:16px;margin-top:17px;align-items:start}
+.ppg-detail-panel{min-width:0;padding:23px;border:1px solid #e2e8df;border-radius:16px;background:#fff}
+.ppg-detail-panel-head{display:flex;gap:12px;align-items:center;margin-bottom:20px}
+.ppg-detail-icon{width:39px;height:39px;flex:0 0 39px;display:grid;place-items:center;background:#edf4e6;border-radius:11px;color:#40724c}
+.ppg-detail-icon svg{width:19px;height:19px}
+.ppg-detail-panel-head h3{margin:0;color:#294432;font-size:16px;font-weight:800}
+.ppg-detail-panel-head p{margin:4px 0 0;color:#879189;font-size:11px;line-height:1.5}
+.ppg-detail-production-grid{display:grid;grid-template-columns:minmax(150px,.75fr) minmax(0,1.25fr);gap:18px}
+.ppg-detail-photo{width:100%;height:210px;object-fit:cover;border-radius:11px;background:#f0f4ec}
+.ppg-detail-no-photo{min-height:170px;height:100%;padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:11px;background:#f5f7f1;border:1px dashed #d7e0d1;border-radius:11px;color:#839085;font-size:11px;line-height:1.6}
+.ppg-detail-no-photo span{padding:7px 10px;background:#e9f1e1;border-radius:7px;color:#55744f;font-size:9px;font-weight:850;letter-spacing:1px}
+.ppg-detail-operation-label{color:#839087;font-size:9px;font-weight:850;letter-spacing:1.2px}
+.ppg-detail-current-op h2{margin:8px 0 10px;color:#20583e;font-size:23px;font-weight:850;line-height:1.25;overflow-wrap:anywhere}
+.ppg-detail-meta{color:#758279;font-size:11px;line-height:1.9}
+.ppg-detail-meta strong{color:#42584a}
+.ppg-detail-chip{display:inline-block;margin-top:12px;padding:6px 9px;border-radius:7px;background:#eef5e4;color:#487246;font-size:10px;font-weight:850}
+.ppg-detail-qty{margin-top:17px;color:#76857a;font-size:11px}
+.ppg-detail-mini-progress{height:5px;margin-top:9px;border-radius:8px;background:#e4ebdf;overflow:hidden}
+.ppg-detail-mini-progress div{height:100%;background:#549063}
+.ppg-detail-op-list{padding-top:18px;margin-top:22px;border-top:1px solid #e9eee6}
+.ppg-detail-op-heading{margin-bottom:8px;color:#54685a;font-size:11px;font-weight:850}
+.ppg-detail-op{display:grid;grid-template-columns:10px minmax(0,1fr) auto;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #eff2ed}
+.ppg-detail-op:last-child{border:0}
+.ppg-detail-op-dot{width:8px;height:8px;border-radius:50%;background:#c9d3c8}
+.ppg-detail-op-dot.completed{background:#2c8156}
+.ppg-detail-op-dot.active{background:#d3a23b;box-shadow:0 0 0 3px #fbf1d6}
+.ppg-detail-op strong{display:block;color:#435749;font-size:11px}
+.ppg-detail-op small{display:block;margin-top:4px;color:#89938a;font-size:10px}
+.ppg-detail-op-state{color:#7d897f;font-size:9px;white-space:nowrap}
+.ppg-detail-timeline{display:flex;flex-direction:column}
+.ppg-detail-stage{position:relative;display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;padding-bottom:23px}
+.ppg-detail-stage:last-child{padding-bottom:0}
+.ppg-detail-stage:not(:last-child):before{content:"";position:absolute;left:13px;top:29px;bottom:0;width:2px;background:#e4ebe0}
+.ppg-detail-stage-icon{z-index:1;width:28px;height:28px;display:grid;place-items:center;border:1px solid #e1e8df;border-radius:50%;background:#f3f6f0;color:#899589}
+.ppg-detail-stage-icon svg{width:14px;height:14px}
+.ppg-detail-stage.completed .ppg-detail-stage-icon{background:#2d7953;border-color:#2d7953;color:#fff}
+.ppg-detail-stage.active .ppg-detail-stage-icon{background:#fff8e4;border:2px solid #d0a441;color:#9f771c}
+.ppg-detail-stage strong{display:block;margin-top:4px;color:#3b5142;font-size:12px}
+.ppg-detail-stage.completed strong{color:#286244}
+.ppg-detail-stage p{margin:6px 0 0;color:#7b877d;font-size:11px;line-height:1.6}
+.ppg-detail-stage time{display:block;margin-top:6px;color:#909a91;font-size:10px}
+.ppg-detail-items{margin-top:17px}
+.ppg-detail-items-grid{display:grid;grid-template-columns:1fr;gap:11px}
+.ppg-detail-item{display:grid;grid-template-columns:61px minmax(0,1fr) auto;align-items:center;gap:12px;padding:11px;border:1px solid #ebf0e8;border-radius:11px}
+.ppg-detail-item-img,.ppg-detail-item-placeholder{width:61px;height:61px;border-radius:9px;object-fit:cover;background:#eff4e9}
+.ppg-detail-item-placeholder{display:grid;place-items:center;color:#5f7a5c;font-size:10px;font-weight:850}
+.ppg-detail-item-name{color:#3c5444;font-size:12px;font-weight:750;overflow-wrap:anywhere}
+.ppg-detail-item-meta{margin-top:5px;color:#849087;font-size:10px;line-height:1.6}
+.ppg-detail-item-qty{text-align:right;color:#47664c;font-size:11px;font-weight:800;white-space:nowrap}
+.ppg-detail-payment-status{display:inline-flex;padding:7px 10px;border-radius:7px;background:#edf5e6;color:#477149;font-size:10px;font-weight:850;margin-bottom:14px}
+.ppg-detail-payment-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ppg-detail-money{padding:13px;border:1px solid #e8eee5;border-radius:10px;background:#fafcf8;min-width:0}
+.ppg-detail-money span{display:block;color:#829087;font-size:10px}
+.ppg-detail-money strong{display:block;margin-top:8px;color:#304b3a;font-size:14px;overflow-wrap:anywhere}
+.ppg-detail-money .paid{color:#29744d}
+.ppg-detail-money.due{background:#fff8ed;border-color:#f0e1c4}
+.ppg-detail-money.due strong{color:#976522}
+.ppg-detail-payment-note{margin:14px 0 0;color:#849087;font-size:10px;line-height:1.65}
+.ppg-detail-panel-full{margin-top:17px}
+.ppg-detail-help{margin-top:18px;padding:20px 22px;border:1px solid #dfe8d9;border-radius:14px;background:#edf3e7;display:flex;align-items:center;justify-content:space-between;gap:15px}
+.ppg-detail-help strong{display:block;color:#365440;font-size:12px}
+.ppg-detail-help p{margin:5px 0 0;color:#7a887e;font-size:11px;line-height:1.6}
+.ppg-detail-help-tag{padding:8px 10px;border-radius:8px;background:#fff;color:#4f7253;font-size:9px;font-weight:850;white-space:nowrap}
+.ppg-detail-message{margin:25px 0;padding:32px;border:1px solid #e2e9df;border-radius:16px;background:#fff;text-align:center;color:#708075}
+.ppg-detail-message h2{margin:0 0 10px;color:#254a35;font-size:22px}
+.ppg-detail-message p{font-size:12px;line-height:1.7}
+.ppg-detail-message a{display:inline-block;margin-top:10px;padding:11px 15px;background:#d8f28a;border-radius:9px;text-decoration:none;color:#24412d;font-size:12px;font-weight:800}
+.ppg-detail-footer{text-align:center;color:#96a097;font-size:10px;padding-top:24px}
+@media(max-width:850px){.ppg-detail-grid{grid-template-columns:1fr}.ppg-detail-hero{padding:27px}.ppg-detail-production-grid{grid-template-columns:.75fr 1.25fr}}
+@media(max-width:580px){.ppg-detail-page{padding:22px 12px 45px}.ppg-detail-hero{grid-template-columns:1fr;padding:24px 20px}.ppg-detail-token{min-width:0}.ppg-detail-statusbar{grid-template-columns:1fr;padding:20px}.ppg-detail-progressbox{display:grid;grid-template-columns:auto 1fr;gap:2px 12px}.ppg-detail-percent{grid-row:span 2}.ppg-detail-progress{grid-column:1/-1}.ppg-detail-stats{grid-template-columns:1fr;gap:9px}.ppg-detail-stat{padding:15px}.ppg-detail-grid{grid-template-columns:1fr}.ppg-detail-panel{padding:18px}.ppg-detail-production-grid{grid-template-columns:1fr}.ppg-detail-photo{height:auto;max-height:300px}.ppg-detail-no-photo{min-height:145px}.ppg-detail-help{align-items:flex-start;flex-direction:column}.ppg-detail-item{grid-template-columns:52px minmax(0,1fr) auto;gap:9px}.ppg-detail-item-img,.ppg-detail-item-placeholder{width:52px;height:52px}.ppg-detail-payment-grid{gap:8px}.ppg-detail-money{padding:11px}.ppg-detail-money strong{font-size:12px}}
+</style>
+
+<section class="ppg-detail-page">
+ <div class="ppg-detail-inner">
+  <a href="/track-order" class="ppg-detail-back">
+   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+   Back to tracking search
+  </a>
+
+  <div id="ppg-detail-loading" class="ppg-detail-message">
+   <h2>Preparing your order report</h2>
+   <p>We're retrieving your latest order, production and delivery updates.</p>
+  </div>
+  <div id="ppg-detail-error" class="ppg-detail-message" style="display:none">
+   <h2>We couldn't find this order</h2>
+   <p id="ppg-detail-error-text">Please check your Tracking ID and try again.</p>
+   <a href="/track-order">Return to tracking search</a>
+  </div>
+
+  <div id="ppg-detail-content" style="display:none">
+   <section class="ppg-detail-hero">
+    <div>
+     <div class="ppg-detail-eyebrow">POWER PARTNER · CUSTOMER ORDER REPORT</div>
+     <h1>Your order, in detail.</h1>
+     <p>Production progress, delivery milestones, order items and payment summary—all in one place.</p>
+    </div>
+    <div class="ppg-detail-token"><small>TRACKING REFERENCE</small><strong id="ppg-detail-token"></strong></div>
+   </section>
+
+   <section class="ppg-detail-statusbar">
+    <div>
+     <div class="ppg-detail-label">CURRENT ORDER STATUS</div>
+     <h2 id="ppg-detail-overall">Loading…</h2>
+     <div class="ppg-detail-date" id="ppg-detail-dates"></div>
+    </div>
+    <div class="ppg-detail-progressbox">
+     <div class="ppg-detail-percent" id="ppg-detail-percent">0%</div>
+     <div class="ppg-detail-percent-caption">DELIVERED</div>
+     <div class="ppg-detail-progress"><div id="ppg-detail-progress-fill" class="ppg-detail-progress-fill" style="width:0%"></div></div>
+    </div>
+   </section>
+
+   <div class="ppg-detail-stats">
+    <div class="ppg-detail-stat"><div class="ppg-detail-stat-label">ORDER PLACED</div><div class="ppg-detail-stat-value" id="ppg-detail-order-date">—</div><div class="ppg-detail-stat-hint">Order confirmation date</div></div>
+    <div class="ppg-detail-stat"><div class="ppg-detail-stat-label">ESTIMATED DELIVERY</div><div class="ppg-detail-stat-value" id="ppg-detail-delivery-date">—</div><div class="ppg-detail-stat-hint">Based on current ERP schedule</div></div>
+    <div class="ppg-detail-stat"><div class="ppg-detail-stat-label">CURRENT PRODUCTION STAGE</div><div class="ppg-detail-stat-value" id="ppg-detail-stage">—</div><div class="ppg-detail-stat-hint" id="ppg-detail-stage-hint">Latest operation available</div></div>
+   </div>
+
+   <div class="ppg-detail-grid">
+    <section class="ppg-detail-panel">
+     <div class="ppg-detail-panel-head"><div class="ppg-detail-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V9l7-6 7 6v12M9 21v-7h6v7"/></svg></div><div><h3>Production tracking</h3><p>Current operation, workstation and production photo</p></div></div>
+     <div class="ppg-detail-production-grid">
+      <div id="ppg-detail-photo-wrap"></div>
+      <div class="ppg-detail-current-op">
+       <div class="ppg-detail-operation-label">CURRENT OPERATION</div>
+       <h2 id="ppg-detail-operation">—</h2>
+       <div class="ppg-detail-meta" id="ppg-detail-workstation"></div>
+       <div class="ppg-detail-chip" id="ppg-detail-production-status"></div>
+       <div class="ppg-detail-qty" id="ppg-detail-production-qty"></div>
+       <div class="ppg-detail-mini-progress"><div id="ppg-detail-production-fill" style="height:100%;width:0;background:#549063"></div></div>
+      </div>
+     </div>
+     <div class="ppg-detail-op-list"><div class="ppg-detail-op-heading">WORK ORDER OPERATIONS</div><div id="ppg-detail-operations"></div></div>
+    </section>
+
+    <section class="ppg-detail-panel">
+     <div class="ppg-detail-panel-head"><div class="ppg-detail-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg></div><div><h3>Order journey</h3><p>Milestones from confirmation to handover</p></div></div>
+     <div id="ppg-detail-timeline" class="ppg-detail-timeline"></div>
+    </section>
+   </div>
+
+   <section class="ppg-detail-panel ppg-detail-panel-full">
+    <div class="ppg-detail-panel-head"><div class="ppg-detail-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16l-1 13H5L4 7ZM9 7a3 3 0 0 1 6 0"/></svg></div><div><h3>Items in your order</h3><p>Product images and quantity summary</p></div></div>
+    <div id="ppg-detail-items" class="ppg-detail-items-grid"></div>
+   </section>
+
+   <section class="ppg-detail-panel ppg-detail-panel-full">
+    <div class="ppg-detail-panel-head"><div class="ppg-detail-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg></div><div><h3>Payment summary</h3><p>Financial summary related to this order</p></div></div>
+    <div id="ppg-detail-payment-status" class="ppg-detail-payment-status">Loading</div>
+    <div class="ppg-detail-payment-grid">
+     <div class="ppg-detail-money"><span>Order total</span><strong id="ppg-money-total">—</strong></div>
+     <div class="ppg-detail-money"><span>Invoiced</span><strong id="ppg-money-invoiced">—</strong></div>
+     <div class="ppg-detail-money"><span>Paid amount</span><strong id="ppg-money-paid" class="paid">—</strong></div>
+     <div class="ppg-detail-money due"><span>Balance due</span><strong id="ppg-money-due">—</strong></div>
+    </div>
+    <p class="ppg-detail-payment-note">For invoice, payment receipt or account reconciliation questions, contact the Power Partner team. This is a customer summary, not a tax invoice or payment receipt.</p>
+   </section>
+
+   <section class="ppg-detail-help">
+    <div><strong>Need help with delivery or installation?</strong><p>Contact the Power Partner team and provide your Tracking ID for order-specific assistance.</p></div>
+    <div class="ppg-detail-help-tag">POWER PARTNER SUPPORT</div>
+   </section>
+  </div>
+  <div class="ppg-detail-footer">POWER PARTNER GLOBAL PVT. LTD. · CUSTOMER ORDER TRACKING</div>
+ </div>
+</section>
+
+<script>
+(function () {
+ const token = (new URLSearchParams(window.location.search).get("tracking_id") || "").trim().toUpperCase();
+ const loading = document.getElementById("ppg-detail-loading");
+ const error = document.getElementById("ppg-detail-error");
+ const errorText = document.getElementById("ppg-detail-error-text");
+ const content = document.getElementById("ppg-detail-content");
+
+ function esc(v) {
+  return String(v == null ? "" : v).replace(/[&<>"']/g, function(c) {
+   return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+  });
+ }
+ function showError(msg) {
+  loading.style.display = "none";
+  content.style.display = "none";
+  error.style.display = "block";
+  errorText.textContent = msg || "Please check the Tracking ID and try again.";
+ }
+ function money(value, currency) {
+  try {
+   return new Intl.NumberFormat("en-IN", {
+    style:"currency", currency:currency || "INR", maximumFractionDigits:2
+   }).format(Number(value) || 0);
+  } catch (e) {
+   return (currency || "INR") + " " + (Number(value) || 0).toFixed(2);
+  }
+ }
+ function stageIcon(state) {
+  if (state === "completed") return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 12 4 4L19 6"/></svg>';
+  if (state === "active") return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>';
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/></svg>';
+ }
+ function render(data) {
+  loading.style.display = "none";
+  error.style.display = "none";
+  content.style.display = "block";
+
+  const production = data.production || {};
+  const payment = data.payment || {};
+  const percent = Math.max(0, Math.min(100, Number(data.delivery_percent) || 0));
+  const stagePercent = Math.max(0, Math.min(100, Number(production.progress_percent) || 0));
+
+  document.getElementById("ppg-detail-token").textContent = token;
+  document.getElementById("ppg-detail-overall").textContent = data.overall_status || "Order confirmed";
+  document.getElementById("ppg-detail-dates").textContent =
+   "Placed " + (data.order_date || "date unavailable") +
+   " · Expected delivery " + (data.estimated_delivery_date || "not available");
+  document.getElementById("ppg-detail-percent").textContent = percent.toFixed(0) + "%";
+  document.getElementById("ppg-detail-progress-fill").style.width = percent + "%";
+  document.getElementById("ppg-detail-order-date").textContent = data.order_date || "—";
+  document.getElementById("ppg-detail-delivery-date").textContent = data.estimated_delivery_date || "Not scheduled";
+  document.getElementById("ppg-detail-stage").textContent = production.stage || "Not planned";
+  document.getElementById("ppg-detail-stage-hint").textContent = production.workstation || "Workstation not assigned";
+
+  const photo = production.photo_url && String(production.photo_url).startsWith("/files/")
+   ? '<img class="ppg-detail-photo" src="' + esc(production.photo_url) + '" alt="Customer-shareable production photo">'
+   : '<div class="ppg-detail-no-photo"><span>PRODUCTION PHOTO</span>No customer-shareable photo has been uploaded for this stage yet.</div>';
+  document.getElementById("ppg-detail-photo-wrap").innerHTML = photo;
+  document.getElementById("ppg-detail-operation").textContent = production.stage || "Awaiting production planning";
+  document.getElementById("ppg-detail-workstation").innerHTML =
+   'Workstation: <strong>' + esc(production.workstation || "Not assigned yet") + '</strong>';
+  document.getElementById("ppg-detail-production-status").textContent = production.status || "Not Started";
+  document.getElementById("ppg-detail-production-qty").textContent =
+   String(production.completed_qty || 0) + " of " + String(production.stage_qty || 0) + " units completed";
+  document.getElementById("ppg-detail-production-fill").style.width = stagePercent + "%";
+
+  const operations = production.operations || [];
+  document.getElementById("ppg-detail-operations").innerHTML = operations.length
+   ? operations.map(function(op) {
+      const state = ["completed","active","pending"].includes(op.state) ? op.state : "pending";
+      return '<div class="ppg-detail-op"><span class="ppg-detail-op-dot ' + state + '"></span>' +
+       '<div><strong>' + esc(op.operation || "Production operation") + '</strong><small>' +
+       esc(op.workstation || "Workstation not assigned") + '</small></div><span class="ppg-detail-op-state">' +
+       esc(op.status || "Pending") + '</span></div>';
+     }).join("")
+   : '<p style="color:#879189;font-size:11px;line-height:1.7">Work Order operations will appear here when production planning is linked to this Sales Order.</p>';
+
+  const stages = data.stages || [];
+  document.getElementById("ppg-detail-timeline").innerHTML = stages.length
+   ? stages.map(function(s) {
+      const state = ["completed","active","pending"].includes(s.state) ? s.state : "pending";
+      return '<div class="ppg-detail-stage ' + state + '"><div class="ppg-detail-stage-icon">' +
+       stageIcon(state) + '</div><div><strong>' + esc(s.label) + '</strong><p>' +
+       esc(s.detail) + '</p>' + (s.date ? '<time>' + esc(s.date) + '</time>' : '') +
+       '</div></div>';
+     }).join("")
+   : '<p style="color:#879189;font-size:11px">No milestones are available yet.</p>';
+
+  const items = data.items || [];
+  document.getElementById("ppg-detail-items").innerHTML = items.length
+   ? items.map(function(item) {
+      const img = item.image && String(item.image).startsWith("/files/")
+       ? '<img class="ppg-detail-item-img" src="' + esc(item.image) + '" alt="' + esc(item.item) + '">'
+       : '<div class="ppg-detail-item-placeholder">PP</div>';
+      return '<div class="ppg-detail-item">' + img + '<div><div class="ppg-detail-item-name">' +
+       esc(item.item || "Product") + '</div><div class="ppg-detail-item-meta">Ordered: ' +
+       esc(item.qty) + '<br>Delivered: ' + esc(item.delivered_qty) + '</div></div>' +
+       '<div class="ppg-detail-item-qty">Qty<br>' + esc(item.qty) + '</div></div>';
+     }).join("")
+   : '<p style="color:#879189;font-size:11px">Item information is not available.</p>';
+
+  document.getElementById("ppg-detail-payment-status").textContent =
+   payment.status || "Payment information unavailable";
+  document.getElementById("ppg-money-total").textContent = money(payment.order_total, payment.currency);
+  document.getElementById("ppg-money-invoiced").textContent = money(payment.invoiced_amount, payment.currency);
+  document.getElementById("ppg-money-paid").textContent = money(payment.paid_amount, payment.currency);
+  document.getElementById("ppg-money-due").textContent = money(payment.balance_due, payment.currency);
+ }
+
+ if (!token) {
+  showError("Enter your Tracking ID from the tracking search page to view this report.");
+  return;
+ }
+
+ fetch("/api/method/ppg_dashboard.api.customer_tracking.get_order_tracking?tracking_id=" + encodeURIComponent(token), {
+  headers: {"Accept":"application/json"}
+ }).then(function(response) {
+  return response.json().then(function(body) {
+   if (!response.ok) throw new Error("Unable to retrieve this order right now.");
+   return body.message || {};
+  });
+ }).then(function(data) {
+  if (!data.found) {
+   showError(data.message || "Tracking ID not found. Please check it and try again.");
+   return;
+  }
+  render(data);
+ }).catch(function() {
+  showError("We could not load the order report. Please try again in a moment.");
+ });
+})();
+</script>
+{% endblock %}

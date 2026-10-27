@@ -1,0 +1,133 @@
+{% extends "templates/web.html" %}
+{% block title %}Track Your Order | Power Partner{% endblock %}
+{% block page_content %}
+<style>
+.ppg-search-page{--forest:#123e32;--lime:#d8f28a;background:#f4f7f1;min-height:76vh;padding:54px 18px 76px;color:#21392e}
+.ppg-search-inner{max-width:990px;margin:auto}
+.ppg-search-hero{display:grid;grid-template-columns:1.1fr .9fr;border-radius:25px;overflow:hidden;background:var(--forest);box-shadow:0 22px 50px #123e321a}
+.ppg-search-copy{padding:48px 42px;align-self:center}
+.ppg-search-eyebrow{color:#c5e79e;font-size:11px;font-weight:800;letter-spacing:2px}
+.ppg-search-copy h1{margin:18px 0 15px;color:#fff!important;font-size:clamp(32px,4vw,47px);line-height:1.1;letter-spacing:-1.5px}
+.ppg-search-copy p{color:#d3e4db;font-size:14px;line-height:1.9;max-width:420px}
+.ppg-search-checks{display:flex;flex-wrap:wrap;gap:9px;margin-top:24px}
+.ppg-search-check{color:#e2eee6;border:1px solid #ffffff30;border-radius:30px;padding:8px 11px;font-size:11px}
+.ppg-search-check span{color:var(--lime);margin-right:5px}
+.ppg-search-art{display:flex;align-items:center;justify-content:center;padding:28px;background:radial-gradient(circle at 50% 40%,#39745b,transparent 65%),#174c3c}
+.ppg-search-card{width:100%;max-width:280px;background:#fff;border-radius:18px;padding:24px;box-shadow:0 16px 40px #0002}
+.ppg-search-card-title{color:#284537;font-size:13px;font-weight:800;padding-bottom:15px;border-bottom:1px solid #e8eee5}
+.ppg-search-step{display:flex;align-items:center;gap:11px;padding-top:17px;color:#405a49;font-size:12px;font-weight:650}
+.ppg-search-icon{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#edf4e7;color:#376b48;flex-shrink:0}
+.ppg-search-icon svg{width:17px;height:17px}
+.ppg-search-box{position:relative;margin:-26px auto 0;max-width:800px;padding:27px 29px;background:#fff;border:1px solid #e5ece1;border-radius:18px;box-shadow:0 15px 38px #1e3d2912}
+.ppg-search-box h2{margin:0 0 7px;font-size:21px;color:#203c2e;font-weight:800}
+.ppg-search-box>p{margin:0 0 19px;font-size:13px;line-height:1.6;color:#78867c}
+.ppg-search-form{display:flex;gap:10px}
+.ppg-search-input-wrap{flex:1;display:flex;align-items:center;gap:10px;padding:0 14px;border:1px solid #dbe4d8;border-radius:11px;background:#fafcf8;min-width:0}
+.ppg-search-input-wrap:focus-within{border-color:#6b9b70;box-shadow:0 0 0 3px #6b9b701c}
+.ppg-search-input-wrap svg{width:18px;height:18px;flex-shrink:0;color:#72897a}
+.ppg-search-input{height:51px!important;min-width:0;width:100%;padding:0!important;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;font-size:14px!important}
+.ppg-search-btn{display:flex;align-items:center;justify-content:center;gap:10px;min-height:51px;padding:0 21px;border:0;border-radius:11px;background:var(--lime);color:#233d2b;font-weight:800;font-size:13px;white-space:nowrap;cursor:pointer}
+.ppg-search-btn:hover{background:#cbe879}
+.ppg-search-btn:disabled{opacity:.6;cursor:wait}
+.ppg-search-btn svg{width:16px;height:16px}
+.ppg-search-note{margin-top:13px;color:#89958b;font-size:11px;line-height:1.7}
+.ppg-search-message{display:none;margin-top:14px;padding:12px;border-radius:9px;font-size:12px;line-height:1.6}
+.ppg-search-message.error{display:block;background:#fff2ef;border:1px solid #f1d3cb;color:#a13c30}
+.ppg-search-footer{margin-top:30px;padding:20px 23px;border:1px solid #e1e8dc;border-radius:14px;background:#ffffffa8;display:flex;align-items:center;justify-content:space-between;gap:15px}
+.ppg-search-footer strong{display:block;color:#365343;font-size:13px}
+.ppg-search-footer p{margin:5px 0 0;color:#7b887f;font-size:12px}
+.ppg-search-tag{padding:8px 10px;border-radius:8px;background:#eaf2e3;color:#47714b;font-size:10px;font-weight:800;white-space:nowrap}
+@media(max-width:680px){.ppg-search-page{padding:25px 13px 45px}.ppg-search-hero{grid-template-columns:1fr}.ppg-search-copy{padding:32px 25px 24px}.ppg-search-copy h1{font-size:35px}.ppg-search-art{padding:20px;min-height:210px}.ppg-search-box{margin:16px auto 0;padding:22px 18px}.ppg-search-form{flex-direction:column}.ppg-search-btn{width:100%}.ppg-search-footer{align-items:flex-start;flex-direction:column}}
+</style>
+
+<section class="ppg-search-page">
+ <div class="ppg-search-inner">
+  <div class="ppg-search-hero">
+   <div class="ppg-search-copy">
+    <div class="ppg-search-eyebrow">POWER PARTNER · ORDER CARE</div>
+    <h1>Your order.<br>Every step, in view.</h1>
+    <p>From order confirmation to manufacturing, dispatch, delivery and installation—follow your order's progress in one place.</p>
+    <div class="ppg-search-checks">
+     <span class="ppg-search-check"><span>✓</span>No account needed</span>
+     <span class="ppg-search-check"><span>✓</span>Order-specific updates</span>
+    </div>
+   </div>
+   <div class="ppg-search-art" aria-hidden="true">
+    <div class="ppg-search-card">
+     <div class="ppg-search-card-title">Your order journey</div>
+     <div class="ppg-search-step"><span class="ppg-search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h14v16H5zM8 8h8M8 12h8"/></svg></span>Order confirmed</div>
+     <div class="ppg-search-step"><span class="ppg-search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V9l7-6 7 6v12M9 21v-7h6v7"/></svg></span>Preparation & production</div>
+     <div class="ppg-search-step"><span class="ppg-search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h11v11H3zM14 11h4l3 3v4h-7z"/></svg></span>Dispatch & delivery</div>
+     <div class="ppg-search-step"><span class="ppg-search-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16M6 20V9l6-5 6 5v11M9 13h6"/></svg></span>Installation & handover</div>
+    </div>
+   </div>
+  </div>
+
+  <div class="ppg-search-box">
+   <h2>Find your order</h2>
+   <p>Enter the Tracking ID shared by our team. Your full order-tracking report will open on the next page.</p>
+   <form id="ppg-search-form" class="ppg-search-form">
+    <div class="ppg-search-input-wrap">
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4.5 4.5"/></svg>
+     <input id="ppg-search-id" class="ppg-search-input" type="text" required
+       autocomplete="off" autocapitalize="characters" spellcheck="false"
+       placeholder="Enter your PPG Tracking ID" aria-label="Tracking ID">
+    </div>
+    <button class="ppg-search-btn" id="ppg-search-btn" type="submit">
+     View order details
+     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+   </form>
+   <div id="ppg-search-message" class="ppg-search-message" role="status"></div>
+   <div class="ppg-search-note">Your Tracking ID is needed to retrieve your order information. Keep it private and share it only with people you trust.</div>
+  </div>
+
+  <div class="ppg-search-footer">
+   <div><strong>Need help with your order?</strong><p>Contact the Power Partner team and keep your Tracking ID handy.</p></div>
+   <div class="ppg-search-tag">POWER PARTNER SUPPORT</div>
+  </div>
+ </div>
+</section>
+
+<script>
+(function () {
+ const form = document.getElementById("ppg-search-form");
+ if (!form) return;
+
+ form.addEventListener("submit", async function (event) {
+  event.preventDefault();
+  const input = document.getElementById("ppg-search-id");
+  const button = document.getElementById("ppg-search-btn");
+  const message = document.getElementById("ppg-search-message");
+  const token = input.value.trim().toUpperCase();
+  if (!token) return;
+
+  button.disabled = true;
+  button.textContent = "Checking Tracking ID…";
+  message.className = "ppg-search-message";
+  message.textContent = "";
+
+  try {
+   const url = "/api/method/ppg_dashboard.api.customer_tracking.get_order_tracking?tracking_id=" + encodeURIComponent(token);
+   const response = await fetch(url, {headers: {"Accept": "application/json"}});
+   const result = await response.json();
+   const data = result.message || {};
+
+   if (!response.ok || !data.found) {
+    message.className = "ppg-search-message error";
+    message.textContent = data.message || "Tracking ID not found. Please check it and try again.";
+    button.disabled = false;
+    button.innerHTML = 'View order details <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+    return;
+   }
+   window.location.href = "/track-order-details?tracking_id=" + encodeURIComponent(token);
+  } catch (e) {
+   message.className = "ppg-search-message error";
+   message.textContent = "We could not check the Tracking ID. Please try again.";
+   button.disabled = false;
+   button.textContent = "View order details";
+  }
+ });
+})();
+</script>
+{% endblock %}

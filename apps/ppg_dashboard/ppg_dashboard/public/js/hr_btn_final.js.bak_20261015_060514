@@ -1,0 +1,38 @@
+/* PPG_HR_DESK_BUTTON_V2 */
+(function () {
+    function renderPPGHRButton() {
+        if (!window.frappe || !window.jQuery) return;
+
+        const roles = (frappe.boot && frappe.boot.user && frappe.boot.user.roles) || [];
+        const isHR = (roles.includes("HR Manager") || roles.includes("HR User"))
+            && !roles.includes("System Manager");
+
+        $("#custom-hr-btn").remove();
+        if (!isHR) return;
+
+        const $button = $(`
+            <li id="custom-hr-btn" class="nav-item" style="display:flex;align-items:center;margin-right:8px;">
+                <button type="button" class="btn btn-primary btn-sm"
+                    style="background:#087f8c;color:white;border:0;border-radius:8px;padding:7px 12px;font-weight:600;white-space:nowrap;">
+                    HR Dashboard
+                </button>
+            </li>
+        `);
+
+        $button.find("button").on("click", function () {
+            frappe.set_route("management-dashboard");
+        });
+
+        const bell = document.querySelector(".desktop-notifications");
+        if (bell && bell.parentElement) {
+            bell.parentElement.insertBefore($button[0], bell);
+        }
+    }
+
+    $(function () {
+        setTimeout(renderPPGHRButton, 1200);
+        if (window.frappe && frappe.router) {
+            frappe.router.on("change", () => setTimeout(renderPPGHRButton, 500));
+        }
+    });
+})();

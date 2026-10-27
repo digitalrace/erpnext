@@ -4,13 +4,20 @@
  "docstatus": 0,
  "doctype": "Page",
  "idx": 0,
- "modified": "2026-07-28 17:35:12.503024",
+ "modified": "2026-10-21 18:13:20.336074",
  "modified_by": "Administrator",
  "module": "PPGPL Dashboard",
  "name": "ppg-production-contr",
  "owner": "Administrator",
  "page_name": "ppg-production-contr",
- "roles": [],
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Management Dashboard"
+  }
+ ],
  "script": null,
  "standard": "Yes",
  "style": null,

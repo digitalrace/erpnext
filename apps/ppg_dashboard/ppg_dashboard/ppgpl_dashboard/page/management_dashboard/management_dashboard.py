@@ -1,0 +1,1170 @@
+import frappe
+from frappe.utils import getdate, today
+
+
+def has_field(doctype, fieldname):
+    try:
+        return bool(frappe.get_meta(doctype).get_field(fieldname))
+    except Exception:
+        return False
+
+
+def month_shift(year, month, shift):
+    total = year * 12 + (month - 1) + shift
+    return total // 12, total % 12 + 1
+
+
+def first_day(year, month):
+    return getdate(f"{year:04d}-{month:02d}-01")
+
+
+def get_period_start(as_of_date, period):
+    if period == "YTD":
+        return as_of_date.replace(month=1, day=1)
+
+    if period == "QTD":
+        quarter_month = ((as_of_date.month - 1) // 3) * 3 + 1
+        return as_of_date.replace(month=quarter_month, day=1)
+
+    return as_of_date.replace(day=1)
+
+
+def money(value):
+    return float(value or 0)
+
+
+@frappe.whitelist()
+def get_dashboard_data(as_of_date=None, period="MTD"):
+
+    as_of_date = getdate(as_of_date or today())
+    period_start = get_period_start(as_of_date, period)
+
+    data = {
+        "as_of_date": str(as_of_date),
+        "period_start": str(period_start),
+
+        "sales": {
+            "revenue": 0,
+            "ytd_revenue": 0,
+            "order_value": 0,
+            "quotations": 0,
+            "sales_orders": 0,
+            "pending_orders": 0,
+            "delayed_orders": 0,
+            "conversion": 0,
+        },
+
+        "production": {
+            "work_orders": 0,
+            "open_work_orders": 0,
+            "completed_work_orders": 0,
+            "delayed_work_orders": 0,
+            "planned_qty": 0,
+            "produced_qty": 0,
+            "progress": 0,
+        },
+
+        "job_cards": {
+            "total": 0,
+            "open": 0,
+            "wip": 0,
+            "on_hold": 0,
+            "material_transferred": 0,
+            "completed": 0,
+            "overdue": 0,
+            "stuck": 0,
+            "stuck_list": [],
+        },
+
+        "delivery": {
+            "notes_in_period": 0,
+            "delivered_qty": 0,
+            "pending_orders": 0,
+            "delayed_orders": 0,
+        },
+
+        "installation": {
+            "completed": 0,
+            "pending_qty": 0,
+            "pending_items": 0,
+        },
+
+        "service": {
+            "raised": 0,
+            "open": 0,
+            "closed": 0,
+            "high": 0,
+            "medium": 0,
+            "low": 0,
+            "avg_first_response_hours": 0,
+            "first_visit_fix": 0,
+            "followup_required": 0,
+            "reports": 0,
+            "oldest": [],
+        },
+
+        "inventory": {
+            "stock_value": 0,
+            "warehouses": 0,
+            "items_with_stock": 0,
+            "zero_stock": 0,
+            "negative_stock": 0,
+        },
+
+        "finance": {
+            "receivables": 0,
+            "receivables_overdue": 0,
+            "receivable_invoices": 0,
+            "payables": 0,
+            "payables_overdue": 0,
+            "payable_invoices": 0,
+        },
+
+        "hr": {
+            "employees": 0,
+            "present": 0,
+            "absent": 0,
+            "attendance_percent": 0,
+            "leave_pending": 0,
+        },
+
+        "quality": {
+            "inspections_period": 0,
+            "pending": 0,
+            "accepted": 0,
+            "rejected": 0,
+        },
+
+        "financial_trend": [],
+        "alerts": [],
+    }
+
+
+    # =========================================================
+    # SALES
+    # =========================================================
+
+    if frappe.db.exists("DocType", "Quotation"):
+
+        data["sales"]["quotations"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabQuotation`
+            WHERE docstatus = 1
+              AND transaction_date BETWEEN %s AND %s
+        """, (period_start, as_of_date))[0][0] or 0
+
+
+    if frappe.db.exists("DocType", "Sales Order"):
+
+        data["sales"]["sales_orders"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabSales Order`
+            WHERE docstatus = 1
+              AND transaction_date BETWEEN %s AND %s
+        """, (period_start, as_of_date))[0][0] or 0
+
+        data["sales"]["order_value"] = money(frappe.db.sql("""
+            SELECT COALESCE(SUM(base_grand_total), 0)
+            FROM `tabSales Order`
+            WHERE docstatus = 1
+              AND transaction_date BETWEEN %s AND %s
+        """, (period_start, as_of_date))[0][0])
+
+
+        if has_field("Sales Order", "per_delivered"):
+
+            data["sales"]["pending_orders"] = frappe.db.sql("""
+                SELECT COUNT(*)
+                FROM `tabSales Order`
+                WHERE docstatus = 1
+                  AND per_delivered < 100
+            """)[0][0] or 0
+
+            if has_field("Sales Order", "delivery_date"):
+
+                data["sales"]["delayed_orders"] = frappe.db.sql("""
+                    SELECT COUNT(*)
+                    FROM `tabSales Order`
+                    WHERE docstatus = 1
+                      AND per_delivered < 100
+                      AND delivery_date < %s
+                """, (as_of_date,))[0][0] or 0
+
+
+    if data["sales"]["quotations"]:
+        data["sales"]["conversion"] = round(
+            data["sales"]["sales_orders"]
+            / data["sales"]["quotations"]
+            * 100,
+            1,
+        )
+
+
+    if frappe.db.exists("DocType", "Sales Invoice"):
+
+        data["sales"]["revenue"] = money(frappe.db.sql("""
+            SELECT COALESCE(SUM(base_grand_total), 0)
+            FROM `tabSales Invoice`
+            WHERE docstatus = 1
+              AND posting_date BETWEEN %s AND %s
+        """, (period_start, as_of_date))[0][0])
+
+
+    # =========================================================
+    # PRODUCTION / WORK ORDER
+    # =========================================================
+
+    if frappe.db.exists("DocType", "Work Order"):
+
+        data["production"]["work_orders"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabWork Order`
+            WHERE docstatus = 1
+              AND creation >= %s
+              AND creation < DATE_ADD(%s, INTERVAL 1 DAY)
+        """, (period_start, as_of_date))[0][0] or 0
+
+
+        data["production"]["open_work_orders"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabWork Order`
+            WHERE docstatus = 1
+              AND status NOT IN (
+                  'Completed',
+                  'Cancelled',
+                  'Closed',
+                  'Stopped'
+              )
+        """)[0][0] or 0
+
+
+        data["production"]["completed_work_orders"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabWork Order`
+            WHERE docstatus = 1
+              AND status = 'Completed'
+              AND creation >= %s
+              AND creation < DATE_ADD(%s, INTERVAL 1 DAY)
+        """, (period_start, as_of_date))[0][0] or 0
+
+
+        if has_field("Work Order", "planned_end_date"):
+
+            data["production"]["delayed_work_orders"] = frappe.db.sql("""
+                SELECT COUNT(*)
+                FROM `tabWork Order`
+                WHERE docstatus = 1
+                  AND status NOT IN (
+                      'Completed',
+                      'Cancelled',
+                      'Closed',
+                      'Stopped'
+                  )
+                  AND planned_end_date < %s
+            """, (as_of_date,))[0][0] or 0
+
+
+        production = frappe.db.sql("""
+            SELECT
+                COALESCE(SUM(qty), 0),
+                COALESCE(SUM(produced_qty), 0)
+            FROM `tabWork Order`
+            WHERE docstatus = 1
+              AND status NOT IN (
+                  'Completed',
+                  'Cancelled',
+                  'Closed',
+                  'Stopped'
+              )
+        """)[0]
+
+        data["production"]["planned_qty"] = float(production[0] or 0)
+        data["production"]["produced_qty"] = float(production[1] or 0)
+
+        if data["production"]["planned_qty"]:
+            data["production"]["progress"] = round(
+                data["production"]["produced_qty"]
+                / data["production"]["planned_qty"]
+                * 100,
+                1,
+            )
+
+
+    # =========================================================
+    # JOB CARDS
+    # =========================================================
+
+    if frappe.db.exists("DocType", "Job Card"):
+
+        active_statuses = (
+            "Open",
+            "Work In Progress",
+            "Material Transferred",
+            "On Hold",
+        )
+
+        data["job_cards"]["total"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabJob Card`
+            WHERE docstatus < 2
+              AND work_order IN (SELECT name FROM `tabWork Order` WHERE docstatus = 1)
+              AND posting_date BETWEEN %s AND %s
+        """, (period_start, as_of_date))[0][0] or 0
+
+
+        for status, key in [
+            ("Open", "open"),
+            ("Work In Progress", "wip"),
+            ("On Hold", "on_hold"),
+            ("Material Transferred", "material_transferred"),
+            ("Completed", "completed"),
+        ]:
+
+            data["job_cards"][key] = frappe.db.sql("""
+                SELECT COUNT(*)
+                FROM `tabJob Card`
+                WHERE docstatus < 2
+              AND work_order IN (SELECT name FROM `tabWork Order` WHERE docstatus = 1)
+                  AND status = %s
+            """, (status,))[0][0] or 0
+
+
+        data["job_cards"]["overdue"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabJob Card`
+            WHERE docstatus < 2
+              AND work_order IN (SELECT name FROM `tabWork Order` WHERE docstatus = 1)
+              AND status IN (
+                  'Open',
+                  'Work In Progress',
+                  'Material Transferred',
+                  'On Hold'
+              )
+              AND expected_end_date IS NOT NULL
+              AND DATE(expected_end_date) < %s
+        """, (as_of_date,))[0][0] or 0
+
+
+        data["job_cards"]["stuck"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabJob Card`
+            WHERE docstatus < 2
+              AND work_order IN (SELECT name FROM `tabWork Order` WHERE docstatus = 1)
+              AND status IN (
+                  'Open',
+                  'Work In Progress',
+                  'Material Transferred',
+                  'On Hold'
+              )
+              AND (
+                  status = 'On Hold'
+                  OR (
+                      expected_end_date IS NOT NULL
+                      AND DATE(expected_end_date) < %s
+                  )
+              )
+        """, (as_of_date,))[0][0] or 0
+
+
+        data["job_cards"]["stuck_list"] = frappe.db.sql("""
+            SELECT
+                name,
+                work_order,
+                operation,
+                workstation,
+                status,
+                expected_end_date,
+                CASE
+                    WHEN status = 'On Hold'
+                        THEN 'On Hold'
+                    WHEN expected_end_date IS NOT NULL
+                         AND DATE(expected_end_date) < %s
+                        THEN 'Overdue'
+                    ELSE 'Attention'
+                END AS reason
+            FROM `tabJob Card`
+            WHERE docstatus < 2
+              AND work_order IN (SELECT name FROM `tabWork Order` WHERE docstatus = 1)
+              AND status IN (
+                  'Open',
+                  'Work In Progress',
+                  'Material Transferred',
+                  'On Hold'
+              )
+              AND (
+                  status = 'On Hold'
+                  OR (
+                      expected_end_date IS NOT NULL
+                      AND DATE(expected_end_date) < %s
+                  )
+              )
+            ORDER BY expected_end_date ASC
+            LIMIT 10
+        """, (as_of_date, as_of_date), as_dict=True)
+
+
+    # =========================================================
+    # DELIVERY
+    # =========================================================
+
+    if frappe.db.exists("DocType", "Delivery Note"):
+
+        data["delivery"]["notes_in_period"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabDelivery Note`
+            WHERE docstatus = 1
+              AND posting_date BETWEEN %s AND %s
+        """, (period_start, as_of_date))[0][0] or 0
+
+
+        if frappe.db.exists("DocType", "Delivery Note Item"):
+
+            data["delivery"]["delivered_qty"] = float(
+                frappe.db.sql("""
+                    SELECT COALESCE(SUM(dni.qty), 0)
+                    FROM `tabDelivery Note Item` dni
+                    INNER JOIN `tabDelivery Note` dn
+                        ON dn.name = dni.parent
+                    WHERE dn.docstatus = 1
+                      AND dn.posting_date BETWEEN %s AND %s
+                """, (period_start, as_of_date))[0][0] or 0
+            )
+
+
+    if frappe.db.exists("DocType", "Sales Order") and \
+       has_field("Sales Order", "per_delivered"):
+
+        data["delivery"]["pending_orders"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabSales Order`
+            WHERE docstatus = 1
+              AND per_delivered < 100
+        """)[0][0] or 0
+
+        if has_field("Sales Order", "delivery_date"):
+
+            data["delivery"]["delayed_orders"] = frappe.db.sql("""
+                SELECT COUNT(*)
+                FROM `tabSales Order`
+                WHERE docstatus = 1
+                  AND per_delivered < 100
+                  AND delivery_date < %s
+            """, (as_of_date,))[0][0] or 0
+
+
+    # =========================================================
+    # INSTALLATION
+    # =========================================================
+
+    if frappe.db.exists("DocType", "Installation Note"):
+
+        data["installation"]["completed"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabInstallation Note`
+            WHERE docstatus = 1
+              AND status = 'Submitted'
+        """)[0][0] or 0
+
+
+        if frappe.db.exists("DocType", "Delivery Note Item"):
+
+            pending = frappe.db.sql("""
+                SELECT
+                    COALESCE(
+                        SUM(
+                            GREATEST(
+                                COALESCE(dni.qty, 0)
+                                - COALESCE(dni.installed_qty, 0),
+                                0
+                            )
+                        ),
+                        0
+                    ),
+                    COUNT(
+                        DISTINCT CASE
+                            WHEN COALESCE(dni.installed_qty, 0)
+                                 < COALESCE(dni.qty, 0)
+                            THEN dn.name
+                        END
+                    )
+                FROM `tabDelivery Note Item` dni
+                INNER JOIN `tabDelivery Note` dn
+                    ON dn.name = dni.parent
+                WHERE dn.docstatus = 1
+            """)[0]
+
+            data["installation"]["pending_qty"] = float(pending[0] or 0)
+            data["installation"]["pending_items"] = pending[1] or 0
+
+
+    # =========================================================
+    # SERVICE COMPLAINT
+    # =========================================================
+
+    if frappe.db.exists("DocType", "Service Complaint"):
+
+        data["service"]["raised"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabService Complaint`
+            WHERE date BETWEEN %s AND %s
+        """, (period_start, as_of_date))[0][0] or 0
+
+
+        data["service"]["open"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabService Complaint`
+            WHERE status IN ('OPEN', 'FORWARD')
+        """)[0][0] or 0
+
+
+        data["service"]["closed"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabService Complaint`
+            WHERE status = 'CLOSE'
+              AND date BETWEEN %s AND %s
+        """, (period_start, as_of_date))[0][0] or 0
+
+
+        if has_field("Service Complaint", "priority"):
+
+            for priority in ["High", "Medium", "Low"]:
+
+                data["service"][priority.lower()] = frappe.db.sql("""
+                    SELECT COUNT(*)
+                    FROM `tabService Complaint`
+                    WHERE status IN ('OPEN', 'FORWARD')
+                      AND priority = %s
+                """, (priority,))[0][0] or 0
+
+
+        if has_field("Service Complaint", "complaint_created_at") and \
+           has_field("Service Complaint", "first_response_at"):
+
+            response = frappe.db.sql("""
+                SELECT AVG(
+                    TIMESTAMPDIFF(
+                        MINUTE,
+                        complaint_created_at,
+                        first_response_at
+                    )
+                )
+                FROM `tabService Complaint`
+                WHERE complaint_created_at IS NOT NULL
+                  AND first_response_at IS NOT NULL
+                  AND date BETWEEN %s AND %s
+            """, (period_start, as_of_date))[0][0]
+
+            if response:
+                data["service"]["avg_first_response_hours"] = round(
+                    float(response) / 60,
+                    1,
+                )
+
+
+        data["service"]["oldest"] = frappe.db.sql("""
+            SELECT
+                name,
+                customer,
+                priority,
+                status,
+                date,
+                assigned_employee,
+                site_name
+            FROM `tabService Complaint`
+            WHERE status IN ('OPEN', 'FORWARD')
+            ORDER BY date ASC
+            LIMIT 8
+        """, as_dict=True)
+
+
+    # =========================================================
+    # SERVICE REPORTS
+    # =========================================================
+
+    if frappe.db.exists("DocType", "Service Report"):
+
+        data["service"]["reports"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabService Report`
+            WHERE date BETWEEN %s AND %s
+        """, (period_start, as_of_date))[0][0] or 0
+
+
+        if has_field("Service Report", "next_visit_required"):
+
+            data["service"]["followup_required"] = frappe.db.sql("""
+                SELECT COUNT(*)
+                FROM `tabService Report`
+                WHERE next_visit_required = 1
+            """)[0][0] or 0
+
+
+        if has_field("Service Report", "visit_no") and \
+           has_field("Service Report", "visit_result"):
+
+            first_visit = frappe.db.sql("""
+                SELECT
+                    COUNT(DISTINCT complain_id),
+                    COUNT(
+                        DISTINCT CASE
+                            WHEN visit_result = 'Resolved'
+                            THEN complain_id
+                        END
+                    )
+                FROM `tabService Report`
+                WHERE visit_no = 1
+                  AND complain_id IS NOT NULL
+            """)[0]
+
+            total = first_visit[0] or 0
+            fixed = first_visit[1] or 0
+
+            if total:
+                data["service"]["first_visit_fix"] = round(
+                    fixed / total * 100,
+                    1,
+                )
+
+
+    # =========================================================
+    # INVENTORY
+    # =========================================================
+
+    if frappe.db.exists("DocType", "Bin"):
+
+        data["inventory"]["stock_value"] = money(
+            frappe.db.sql("""
+                SELECT COALESCE(SUM(stock_value), 0)
+                FROM `tabBin`
+            """)[0][0]
+        )
+
+        data["inventory"]["warehouses"] = frappe.db.sql("""
+            SELECT COUNT(DISTINCT warehouse)
+            FROM `tabBin`
+            WHERE actual_qty != 0
+        """)[0][0] or 0
+
+        data["inventory"]["items_with_stock"] = frappe.db.sql("""
+            SELECT COUNT(DISTINCT item_code)
+            FROM `tabBin`
+            WHERE actual_qty > 0
+        """)[0][0] or 0
+
+        data["inventory"]["zero_stock"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabBin`
+            WHERE actual_qty = 0
+        """)[0][0] or 0
+
+        data["inventory"]["negative_stock"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabBin`
+            WHERE actual_qty < 0
+        """)[0][0] or 0
+
+
+    # =========================================================
+    # FINANCE
+    # =========================================================
+
+    if frappe.db.exists("DocType", "Sales Invoice"):
+
+        data["finance"]["receivables"] = money(
+            frappe.db.sql("""
+                SELECT COALESCE(SUM(outstanding_amount), 0)
+                FROM `tabSales Invoice`
+                WHERE docstatus = 1
+                  AND outstanding_amount > 0
+            """)[0][0]
+        )
+
+        finance_rec = frappe.db.sql("""
+            SELECT
+                COUNT(*),
+                COALESCE(SUM(outstanding_amount), 0)
+            FROM `tabSales Invoice`
+            WHERE docstatus = 1
+              AND outstanding_amount > 0
+              AND due_date < %s
+        """, (as_of_date,))[0]
+
+        data["finance"]["receivable_invoices"] = finance_rec[0] or 0
+        data["finance"]["receivables_overdue"] = money(finance_rec[1])
+
+
+    if frappe.db.exists("DocType", "Purchase Invoice"):
+
+        data["finance"]["payables"] = money(
+            frappe.db.sql("""
+                SELECT COALESCE(SUM(outstanding_amount), 0)
+                FROM `tabPurchase Invoice`
+                WHERE docstatus = 1
+                  AND outstanding_amount > 0
+            """)[0][0]
+        )
+
+        finance_pay = frappe.db.sql("""
+            SELECT
+                COUNT(*),
+                COALESCE(SUM(outstanding_amount), 0)
+            FROM `tabPurchase Invoice`
+            WHERE docstatus = 1
+              AND outstanding_amount > 0
+              AND due_date < %s
+        """, (as_of_date,))[0]
+
+        data["finance"]["payable_invoices"] = finance_pay[0] or 0
+        data["finance"]["payables_overdue"] = money(finance_pay[1])
+
+
+    # =========================================================
+    # HR
+    # =========================================================
+
+    data["hr"] = {
+        "employees": 0,
+        "present": 0,
+        "absent": 0,
+        "on_leave": 0,
+        "half_day": 0,
+        "attendance_percent": 0,
+        "leave_pending": 0,
+        "attendance_date": str(as_of_date),
+        "attendance_source": "No Data",
+        "absent_employees": [],
+    }
+
+
+    # Active Employees
+    if frappe.db.exists("DocType", "Employee"):
+
+        data["hr"]["employees"] = frappe.db.count(
+            "Employee",
+            filters={"status": "Active"},
+        )
+
+
+    # =========================================================
+    # APPROVED LEAVE FOR SELECTED DATE
+    # =========================================================
+
+    approved_leave_employees = set()
+
+    if frappe.db.exists("DocType", "Leave Application"):
+
+        leave_rows = frappe.db.sql("""
+            SELECT DISTINCT employee
+            FROM `tabLeave Application`
+            WHERE docstatus = 1
+              AND status = 'Approved'
+              AND from_date <= %s
+              AND to_date >= %s
+              AND employee IS NOT NULL
+        """, (as_of_date, as_of_date), as_dict=True)
+
+        approved_leave_employees = {
+            row.employee for row in leave_rows
+        }
+
+        data["hr"]["on_leave"] = len(
+            approved_leave_employees
+        )
+
+
+        # Pending leaves
+        data["hr"]["leave_pending"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabLeave Application`
+            WHERE status IN ('Open', 'Pending Approval')
+        """)[0][0] or 0
+
+
+    # =========================================================
+    # ATTENDANCE DOCUMENTS
+    # =========================================================
+
+    attendance_exists = False
+
+    if frappe.db.exists("DocType", "Attendance"):
+
+        attendance_rows = frappe.db.sql("""
+            SELECT
+                employee,
+                status
+            FROM `tabAttendance`
+            WHERE attendance_date = %s
+              AND docstatus = 1
+              AND employee IS NOT NULL
+        """, (as_of_date,), as_dict=True)
+
+
+        if attendance_rows:
+
+            attendance_exists = True
+
+            present = 0
+            absent = 0
+            half_day = 0
+            on_leave = 0
+
+            for row in attendance_rows:
+
+                if row.status == "Present":
+                    present += 1
+
+                elif row.status == "Absent":
+                    absent += 1
+
+                elif row.status == "Half Day":
+                    half_day += 1
+
+                elif row.status == "On Leave":
+                    on_leave += 1
+
+
+            data["hr"]["present"] = present
+            data["hr"]["absent"] = absent
+            data["hr"]["half_day"] = half_day
+            data["hr"]["on_leave"] = max(
+                on_leave,
+                len(approved_leave_employees),
+            )
+
+            absent_rows = frappe.db.sql("""
+                SELECT
+                    employee,
+                    employee_name,
+                    department
+                FROM `tabAttendance`
+                WHERE attendance_date = %s
+                  AND docstatus = 1
+                  AND status = 'Absent'
+                ORDER BY employee_name
+            """, (as_of_date,), as_dict=True)
+
+            data["hr"]["absent_employees"] = absent_rows
+
+            total_marked = (
+                present
+                + absent
+                + half_day
+                + data["hr"]["on_leave"]
+            )
+
+            if total_marked:
+                effective_present = (
+                    present
+                    + (half_day * 0.5)
+                )
+
+                data["hr"]["attendance_percent"] = round(
+                    effective_present
+                    / total_marked
+                    * 100,
+                    1,
+                )
+
+            data["hr"]["attendance_source"] = "Attendance"
+
+
+    # =========================================================
+    # EMPLOYEE CHECKIN FALLBACK
+    # =========================================================
+
+    if not attendance_exists and frappe.db.exists(
+        "DocType",
+        "Employee Checkin"
+    ):
+
+        checkin_rows = frappe.db.sql("""
+            SELECT DISTINCT employee
+            FROM `tabEmployee Checkin`
+            WHERE DATE(time) = %s
+              AND employee IS NOT NULL
+        """, (as_of_date,), as_dict=True)
+
+
+        checked_in_employees = {
+            row.employee for row in checkin_rows
+        }
+
+
+        present = len(
+            checked_in_employees
+            - approved_leave_employees
+        )
+
+        on_leave = len(
+            approved_leave_employees
+        )
+
+
+        absent = max(
+            data["hr"]["employees"]
+            - present
+            - on_leave,
+            0,
+        )
+
+
+        # Employees with no check-in on selected date
+        active_employees = frappe.db.sql("""
+            SELECT
+                name AS employee,
+                employee_name,
+                department
+            FROM `tabEmployee`
+            WHERE status = 'Active'
+        """, as_dict=True)
+
+        data["hr"]["absent_employees"] = [
+            emp for emp in active_employees
+            if emp.employee not in checked_in_employees
+            and emp.employee not in approved_leave_employees
+        ]
+
+        data["hr"]["present"] = present
+        data["hr"]["absent"] = absent
+        data["hr"]["on_leave"] = on_leave
+        data["hr"]["half_day"] = 0
+
+
+        attendance_base = (
+            present
+            + absent
+            + on_leave
+        )
+
+
+        if attendance_base:
+            data["hr"]["attendance_percent"] = round(
+                present
+                / attendance_base
+                * 100,
+                1,
+            )
+
+
+        data["hr"]["attendance_source"] = (
+            "Employee Checkin"
+        )
+
+
+    # Exact selected date — never substitute another date
+    data["hr"]["attendance_date"] = str(
+        as_of_date
+    )
+
+    # =========================================================
+    # QUALITY
+    # =========================================================
+
+    if frappe.db.exists("DocType", "Quality Inspection"):
+
+        data["quality"]["inspections_period"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabQuality Inspection`
+            WHERE report_date BETWEEN %s AND %s
+        """, (period_start, as_of_date))[0][0] or 0
+
+
+        data["quality"]["pending"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabQuality Inspection`
+            WHERE docstatus = 0
+        """)[0][0] or 0
+
+
+        data["quality"]["accepted"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabQuality Inspection`
+            WHERE status = 'Accepted'
+        """)[0][0] or 0
+
+
+        data["quality"]["rejected"] = frappe.db.sql("""
+            SELECT COUNT(*)
+            FROM `tabQuality Inspection`
+            WHERE status = 'Rejected'
+        """)[0][0] or 0
+
+
+    # =========================================================
+    # FINANCIAL TREND - LAST 6 MONTHS
+    # =========================================================
+
+    start_year, start_month = month_shift(
+        as_of_date.year,
+        as_of_date.month,
+        -5,
+    )
+
+    trend_start = first_day(start_year, start_month)
+
+    months = []
+
+    current_year = start_year
+    current_month = start_month
+
+    for _ in range(6):
+
+        months.append({
+            "year": current_year,
+            "month": current_month,
+            "label": first_day(
+                current_year,
+                current_month
+            ).strftime("%b"),
+            "revenue": 0,
+            "expense": 0,
+        })
+
+        current_year, current_month = month_shift(
+            current_year,
+            current_month,
+            1,
+        )
+
+
+    if frappe.db.exists("DocType", "Sales Invoice"):
+
+        rows = frappe.db.sql("""
+            SELECT
+                YEAR(posting_date) AS yr,
+                MONTH(posting_date) AS mn,
+                COALESCE(SUM(base_grand_total), 0) AS amount
+            FROM `tabSales Invoice`
+            WHERE docstatus = 1
+              AND posting_date BETWEEN %s AND %s
+            GROUP BY YEAR(posting_date), MONTH(posting_date)
+        """, (trend_start, as_of_date), as_dict=True)
+
+        for row in rows:
+
+            for month in months:
+
+                if (
+                    month["year"] == row.yr
+                    and month["month"] == row.mn
+                ):
+                    month["revenue"] = money(row.amount)
+
+
+    if frappe.db.exists("DocType", "Purchase Invoice"):
+
+        rows = frappe.db.sql("""
+            SELECT
+                YEAR(posting_date) AS yr,
+                MONTH(posting_date) AS mn,
+                COALESCE(SUM(base_grand_total), 0) AS amount
+            FROM `tabPurchase Invoice`
+            WHERE docstatus = 1
+              AND posting_date BETWEEN %s AND %s
+            GROUP BY YEAR(posting_date), MONTH(posting_date)
+        """, (trend_start, as_of_date), as_dict=True)
+
+        for row in rows:
+
+            for month in months:
+
+                if (
+                    month["year"] == row.yr
+                    and month["month"] == row.mn
+                ):
+                    month["expense"] = money(row.amount)
+
+
+    data["financial_trend"] = months
+
+
+    # =========================================================
+    # MANAGEMENT ALERTS
+    # =========================================================
+
+    alerts = []
+
+
+    if data["job_cards"]["on_hold"]:
+        alerts.append({
+            "type": "danger",
+            "message": "Job Cards on Hold",
+            "count": data["job_cards"]["on_hold"],
+        })
+
+
+    if data["job_cards"]["overdue"]:
+        alerts.append({
+            "type": "danger",
+            "message": "Job Cards overdue",
+            "count": data["job_cards"]["overdue"],
+        })
+
+
+    if data["production"]["delayed_work_orders"]:
+        alerts.append({
+            "type": "danger",
+            "message": "Work Orders delayed",
+            "count": data["production"]["delayed_work_orders"],
+        })
+
+
+    if data["sales"]["delayed_orders"]:
+        alerts.append({
+            "type": "warning",
+            "message": "Sales Orders delayed",
+            "count": data["sales"]["delayed_orders"],
+        })
+
+
+    if data["delivery"]["delayed_orders"]:
+        alerts.append({
+            "type": "warning",
+            "message": "Sales Orders overdue for delivery",
+            "count": data["delivery"]["delayed_orders"],
+        })
+
+
+    if data["installation"]["pending_items"]:
+        alerts.append({
+            "type": "warning",
+            "message": "Deliveries pending installation",
+            "count": data["installation"]["pending_items"],
+        })
+
+
+    if data["service"]["high"]:
+        alerts.append({
+            "type": "danger",
+            "message": "High Priority Service Complaints",
+            "count": data["service"]["high"],
+        })
+
+
+    if data["finance"]["receivables_overdue"]:
+        alerts.append({
+            "type": "danger",
+            "message": "Overdue Receivables",
+            "count": data["finance"]["receivables_overdue"],
+        })
+
+
+    if data["inventory"]["negative_stock"]:
+        alerts.append({
+            "type": "danger",
+            "message": "Negative Stock Entries",
+            "count": data["inventory"]["negative_stock"],
+        })
+
+
+    if data["quality"]["pending"]:
+        alerts.append({
+            "type": "warning",
+            "message": "Quality Inspections Pending",
+            "count": data["quality"]["pending"],
+        })
+
+
+    data["alerts"] = alerts[:10]
+
+    return data

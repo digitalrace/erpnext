@@ -1,0 +1,549 @@
+import re
+import secrets
+import string
+
+import frappe
+from frappe.custom.doctype.custom_field.custom_field import create_custom_field
+
+
+FIELD = "custom_customer_tracking_id"
+
+
+def _new_tracking_id():
+    # A random, hard-to-guess tracking ID; not the Sales Order number.
+    for _ in range(10):
+        token = "PPG-" + "".join(
+            secrets.choice(string.ascii_uppercase + string.digits)
+            for _ in range(12)
+        )
+        if not frappe.db.exists("Sales Order", {FIELD: token}):
+            return token
+    frappe.throw("Could not generate a unique tracking ID.")
+
+
+def ensure_tracking_id(doc, method=None):
+    if not doc.get(FIELD):
+        doc.set(FIELD, _new_tracking_id())
+
+
+def setup_customer_tracking():
+    """Create the Sales Order field and backfill submitted orders."""
+    existing = frappe.db.exists(
+        "Custom Field", {"dt": "Sales Order", "fieldname": FIELD}
+    )
+
+    if not existing:
+        create_custom_field("Sales Order", {
+            "fieldname": FIELD,
+            "label": "Customer Tracking ID",
+            "fieldtype": "Data",
+            "insert_after": "delivery_date",
+            "read_only": 1,
+            "no_copy": 1,
+            "description": "Share this ID with the customer to track the order.",
+        })
+    else:
+        frappe.db.set_value(
+            "Custom Field", existing,
+            {"read_only": 1, "no_copy": 1},
+            update_modified=False,
+        )
+
+    frappe.clear_cache(doctype="Sales Order")
+
+    rows = frappe.get_all(
+        "Sales Order",
+        filters={"docstatus": 1},
+        fields=["name", FIELD],
+        limit_page_length=100000,
+    )
+    updated = 0
+
+    for row in rows:
+        if not row.get(FIELD):
+            frappe.db.set_value(
+                "Sales Order", row.name, FIELD, _new_tracking_id(),
+                update_modified=False,
+            )
+            updated += 1
+
+    frappe.db.commit()
+    frappe.clear_cache(doctype="Sales Order")
+    return {"field": FIELD, "existing_orders_assigned_ids": updated}
+
+
+def _fields(doctype):
+    if not frappe.db.exists("DocType", doctype):
+        return set()
+    return {field.fieldname for field in frappe.get_meta(doctype).fields}
+
+
+def _date(value):
+    return str(value)[:10] if value else None
+
+
+def _num(value):
+    try:
+        return float(value or 0)
+    except (ValueError, TypeError):
+        return 0.0
+
+
+def _linked_delivery_notes(order_name, sales_items):
+    if not sales_items or not frappe.db.exists("DocType", "Delivery Note Item"):
+        return []
+
+    item_fields = _fields("Delivery Note Item")
+    if "so_detail" not in item_fields:
+        return []
+
+    child_rows = frappe.get_all(
+        "Delivery Note Item",
+        filters={
+            "so_detail": ["in", [item.name for item in sales_items]],
+            "parenttype": "Delivery Note",
+        },
+        fields=["parent"],
+        limit_page_length=5000,
+    )
+    names = sorted({row.parent for row in child_rows if row.parent})
+
+    if not names or not frappe.db.exists("DocType", "Delivery Note"):
+        return []
+
+    return frappe.get_all(
+        "Delivery Note",
+        filters={"name": ["in", names], "docstatus": 1},
+        fields=["name", "posting_date"],
+        order_by="posting_date asc",
+        limit_page_length=500,
+    )
+
+
+def _plain_address(value):
+    import html as _html
+
+    value = str(value or "").strip()
+    if not value:
+        return ""
+    value = re.sub(r"(?i)<br\s*/?>", ", ", value)
+    value = re.sub(r"(?i)</(?:div|p|li)>", ", ", value)
+    value = re.sub(r"<[^>]+>", " ", value)
+    value = _html.unescape(value)
+    return " ".join(value.split()).strip(" ,")
+
+
+def _delivery_address(order_name, delivery_notes):
+    """Return the delivery destination from the latest delivery note or Sales Order."""
+    docs = []
+
+    dn_fields = _fields("Delivery Note")
+    dn_read_fields = ["name"] + [
+        f for f in (
+            "shipping_address", "address_display", "dispatch_address",
+            "shipping_address_name", "customer_address", "dispatch_address_name",
+        ) if f in dn_fields
+    ]
+
+    if delivery_notes and len(dn_read_fields) > 1:
+        latest_note = delivery_notes[-1]
+        note_name = latest_note.get("name") if hasattr(latest_note, "get") else getattr(latest_note, "name", None)
+        if note_name:
+            note = frappe.db.get_value(
+                "Delivery Note", note_name, dn_read_fields, as_dict=True
+            )
+            if note:
+                docs.append(note)
+
+    so_fields = _fields("Sales Order")
+    so_read_fields = ["name"] + [
+        f for f in (
+            "shipping_address", "address_display", "dispatch_address",
+            "shipping_address_name", "customer_address", "dispatch_address_name",
+        ) if f in so_fields
+    ]
+    so = frappe.db.get_value(
+        "Sales Order", order_name, so_read_fields, as_dict=True
+    )
+    if so:
+        docs.append(so)
+
+    for doc in docs:
+        for field in ("shipping_address", "address_display", "dispatch_address"):
+            address = _plain_address(doc.get(field))
+            if address:
+                return address
+
+    address_fields = _fields("Address")
+    address_read_fields = ["name"] + [
+        f for f in (
+            "address_title", "address_line1", "address_line2",
+            "city", "state", "pincode", "country",
+        ) if f in address_fields
+    ]
+
+    for doc in docs:
+        for field in (
+            "shipping_address_name", "customer_address", "dispatch_address_name"
+        ):
+            address_name = doc.get(field)
+            if not address_name or not frappe.db.exists("Address", address_name):
+                continue
+            record = frappe.db.get_value(
+                "Address", address_name, address_read_fields, as_dict=True
+            )
+            if record:
+                parts = [
+                    record.get(f) for f in (
+                        "address_title", "address_line1", "address_line2",
+                        "city", "state", "pincode", "country",
+                    ) if record.get(f)
+                ]
+                if parts:
+                    return ", ".join(dict.fromkeys(parts))
+
+    return None
+
+
+def _installation_records(delivery_names, order_name=None):
+    """Find installation assignments by Sales Order or Delivery Note."""
+    assignments_by_name = {}
+    notes_by_name = {}
+
+    assignment_fields = _fields("Installation Assignment")
+    assignment_read_fields = ["name", "modified"] + [
+        field for field in (
+            "delivery_note", "custom_sales_order", "status",
+            "workflow_state", "planned_date", "planned_time",
+            "customer", "customer_name",
+        )
+        if field in assignment_fields
+    ]
+
+    if frappe.db.exists("DocType", "Installation Assignment"):
+        def collect_assignments(filters):
+            for row in frappe.get_all(
+                "Installation Assignment",
+                filters=filters,
+                fields=list(dict.fromkeys(assignment_read_fields)),
+                order_by="modified desc",
+                limit_page_length=500,
+            ):
+                if row.get("name"):
+                    assignments_by_name[row.name] = row
+
+        # Prefer the direct Sales Order link; it works before dispatch too.
+        if order_name and "custom_sales_order" in assignment_fields:
+            collect_assignments({
+                "custom_sales_order": order_name,
+                "docstatus": ["!=", 2],
+            })
+
+        # Also include assignments already linked through Delivery Notes.
+        if delivery_names and "delivery_note" in assignment_fields:
+            collect_assignments({
+                "delivery_note": ["in", list(delivery_names)],
+                "docstatus": ["!=", 2],
+            })
+
+    assignments = sorted(
+        assignments_by_name.values(),
+        key=lambda row: str(row.get("modified") or ""),
+        reverse=True,
+    )
+
+    note_fields = _fields("Installation Note")
+    note_read_fields = ["name", "modified", "docstatus"] + [
+        field for field in (
+            "status", "inst_date", "custom_signoff_date",
+            "custom_customer_signoff", "custom_installation_assignment",
+            "customer_address", "address_display",
+        )
+        if field in note_fields
+    ]
+
+    if frappe.db.exists("DocType", "Installation Note"):
+        def collect_notes(filters):
+            for row in frappe.get_all(
+                "Installation Note",
+                filters=filters,
+                fields=list(dict.fromkeys(note_read_fields)),
+                order_by="modified desc",
+                limit_page_length=500,
+            ):
+                if row.get("name"):
+                    notes_by_name[row.name] = row
+
+        # Notes linked to delivered items.
+        if delivery_names:
+            for link_field in ("delivery_note", "delivery_note_ref"):
+                if link_field in note_fields:
+                    collect_notes({
+                        link_field: ["in", list(delivery_names)],
+                        "docstatus": ["!=", 2],
+                    })
+
+        # Notes linked directly to assignments for this Sales Order.
+        assignment_names = [
+            row.get("name") for row in assignments if row.get("name")
+        ]
+        if assignment_names and "custom_installation_assignment" in note_fields:
+            collect_notes({
+                "custom_installation_assignment": ["in", assignment_names],
+                "docstatus": ["!=", 2],
+            })
+
+    installation_notes = sorted(
+        notes_by_name.values(),
+        key=lambda row: str(row.get("modified") or ""),
+        reverse=True,
+    )
+
+    installation_note_complete = any(
+        int(note.get("docstatus") or 0) == 1
+        or str(note.get("status") or "").lower() == "submitted"
+        for note in installation_notes
+    )
+
+    return assignments, installation_notes, installation_note_complete
+
+
+@frappe.whitelist(allow_guest=True)
+def get_order_tracking(tracking_id=None):
+    """Return customer-safe information for one submitted Sales Order."""
+    token = (tracking_id or "").strip().upper()
+
+    if not re.fullmatch(r"(?:PPG-[A-Z0-9]{12}|PPG-[A-F0-9]{32})", token):
+        return {
+            "found": False,
+            "message": "Tracking ID not found. Please check it and try again.",
+        }
+
+    order_fields = [
+        "name", "transaction_date", "delivery_date",
+        "per_delivered", "delivery_status",
+    ]
+    so_meta_fields = _fields("Sales Order")
+    order_fields.extend(
+        f for f in (
+            "customer", "shipping_address", "address_display",
+            "dispatch_address", "shipping_address_name",
+            "customer_address", "dispatch_address_name",
+        )
+        if f in so_meta_fields and f not in order_fields
+    )
+
+    order = frappe.db.get_value(
+        "Sales Order",
+        {FIELD: token, "docstatus": 1},
+        order_fields,
+        as_dict=True,
+    )
+
+    if not order:
+        # Same response whether a token is invalid or belongs to no submitted order.
+        return {
+            "found": False,
+            "message": "Tracking ID not found. Please check it and try again.",
+        }
+
+    sales_items = frappe.get_all(
+        "Sales Order Item",
+        filters={"parent": order.name, "parenttype": "Sales Order"},
+        fields=["name", "item_name", "qty", "delivered_qty"],
+        limit_page_length=200,
+    )
+
+    item_summary = [
+        {
+            "item": row.item_name or "Product",
+            "qty": _num(row.qty),
+            "delivered_qty": _num(row.delivered_qty),
+        }
+        for row in sales_items
+    ]
+
+    # Read submitted manufacturing orders only; never expose internal order IDs.
+    work_orders = []
+    wo_fields = _fields("Work Order")
+    if "sales_order" in wo_fields:
+        query_fields = ["name"]
+        for field in ("status", "qty", "produced_qty"):
+            if field in wo_fields:
+                query_fields.append(field)
+
+        work_orders = frappe.get_all(
+            "Work Order",
+            filters={"sales_order": order.name, "docstatus": ["!=", 2]},
+            fields=query_fields,
+            limit_page_length=200,
+        )
+
+    wo_statuses = [
+        str(row.get("status") or "").lower() for row in work_orders
+    ]
+    production_complete = bool(work_orders) and all(
+        status in ("completed", "closed")
+        or (
+            _num(row.get("qty")) > 0
+            and _num(row.get("produced_qty")) >= _num(row.get("qty"))
+        )
+        for row, status in zip(work_orders, wo_statuses)
+    )
+    production_started = any(
+        _num(row.get("produced_qty")) > 0
+        or status not in ("", "not started", "draft", "open")
+        for row, status in zip(work_orders, wo_statuses)
+    )
+
+    delivery_notes = _linked_delivery_notes(order.name, sales_items)
+    delivery_names = [row.name for row in delivery_notes]
+    delivered_percent = min(100.0, max(0.0, _num(order.per_delivered)))
+    fully_delivered = delivered_percent >= 99.99
+    has_delivery = bool(delivery_notes) or delivered_percent > 0
+
+    assignments, installation_notes, installation_note_complete = _installation_records(
+        delivery_names, order.name
+    )
+
+    assignment_statuses = [
+        " ".join(str(row.get("status") or row.get("workflow_state") or "").lower().split())
+        for row in assignments
+    ]
+    installation_complete = installation_note_complete or any(
+        "complete" in status or "installed" in status
+        for status in assignment_statuses
+    )
+    installation_started = bool(installation_notes) or any(
+        status in (
+            "scheduled", "in progress", "work in progress",
+            "completed", "installed",
+        )
+        for status in assignment_statuses
+    )
+
+    installation_date = next(
+        (_date(note.get("inst_date")) for note in installation_notes if note.get("inst_date")),
+        None,
+    ) or next(
+        (_date(row.get("planned_date")) for row in assignments if row.get("planned_date")),
+        None,
+    )
+    handover_date = next(
+        (
+            _date(note.get("custom_signoff_date"))
+            for note in installation_notes
+            if note.get("custom_signoff_date")
+        ),
+        None,
+    )
+    handover_complete = bool(handover_date) or any(
+        str(note.get("custom_customer_signoff") or "").strip().lower()
+        in ("1", "true", "yes")
+        for note in installation_notes
+    )
+
+    if installation_complete:
+        overall = "Installation completed"
+    elif fully_delivered:
+        overall = "Delivered"
+    elif delivered_percent > 0:
+        overall = "Partially delivered"
+    elif delivery_notes:
+        overall = "Dispatched"
+    elif production_started:
+        overall = "In production"
+    elif production_complete:
+        overall = "Production completed"
+    else:
+        overall = "Order confirmed"
+
+    stages = [
+        {
+            "label": "Order confirmed",
+            "state": "completed",
+            "detail": "Your order has been confirmed.",
+            "date": _date(order.transaction_date),
+        }
+    ]
+
+    if production_complete:
+        prod_state, prod_detail = "completed", "Production is completed."
+    elif production_started:
+        prod_state, prod_detail = "active", "Preparation or production is in progress."
+    else:
+        prod_state, prod_detail = "pending", "Preparation or production has not started yet."
+
+    stages.append({
+        "label": "Preparation & production",
+        "state": prod_state,
+        "detail": prod_detail,
+        "date": None,
+    })
+
+    if fully_delivered:
+        delivery_state, delivery_detail = "completed", "Your order has been delivered."
+    elif has_delivery:
+        delivery_state = "active"
+        delivery_detail = (
+            "Your order is partially delivered."
+            if delivered_percent > 0
+            else "Your order has been dispatched."
+        )
+    else:
+        delivery_state, delivery_detail = "pending", "Your order is awaiting dispatch."
+
+    stages.append({
+        "label": "Dispatch & delivery",
+        "state": delivery_state,
+        "detail": delivery_detail,
+        "date": _date(delivery_notes[-1].posting_date) if delivery_notes else None,
+    })
+
+    if installation_complete:
+        install_state, install_detail = "completed", "Installation has been completed."
+    elif installation_started:
+        install_state, install_detail = "active", "Installation is scheduled or in progress."
+    else:
+        install_state, install_detail = "pending", "Installation has not been scheduled yet."
+
+    stages.append({
+        "label": "Installation",
+        "state": install_state,
+        "detail": install_detail,
+        "date": installation_date,
+    })
+
+    stages.append({
+        "label": "Handover",
+        "state": (
+            "completed" if handover_complete
+            else "active" if installation_complete
+            else "pending"
+        ),
+        "detail": (
+            "Customer sign-off is recorded; handover is complete."
+            if handover_complete
+            else "Installation is recorded; awaiting customer sign-off."
+            if installation_complete
+            else "Handover will be updated when installation and customer sign-off are recorded."
+        ),
+        "date": handover_date,
+    })
+
+    from ppg_dashboard.api.customer_tracking_details import build_details
+    details = build_details(order.name)
+
+    return {
+        "found": True,
+        "order_reference": order.name,
+        "overall_status": overall,
+        "order_date": _date(order.transaction_date),
+        "estimated_delivery_date": _date(order.delivery_date),
+        "delivery_address": _delivery_address(order.name, delivery_notes),
+        "delivery_percent": round(delivered_percent, 1),
+        "items": details.get("items") or item_summary,
+        "production": details.get("production") or {},
+        "payment": details.get("payment") or {},
+        "stages": stages,
+    }

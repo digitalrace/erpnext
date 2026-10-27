@@ -1,0 +1,112 @@
+<div class="management-dashboard">
+
+    <div class="dashboard-header">
+        <div>
+            <h2>Management Dashboard</h2>
+            <p>Business overview and operational performance</p>
+        </div>
+        <button class="btn btn-primary" id="refresh-dashboard">
+            Refresh
+        </button>
+    </div>
+
+    <!-- KPI CARDS -->
+    <div class="kpi-grid">
+
+        <div class="kpi-card">
+            <div class="kpi-label">Sales</div>
+            <div class="kpi-value" id="kpi-sales">₹0</div>
+            <div class="kpi-sub">Current period</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Open Work Orders</div>
+            <div class="kpi-value" id="kpi-work-orders">0</div>
+            <div class="kpi-sub">Manufacturing</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Pending Deliveries</div>
+            <div class="kpi-value" id="kpi-deliveries">0</div>
+            <div class="kpi-sub">Delivery Notes</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-label">Open Service Complaints</div>
+            <div class="kpi-value" id="kpi-complaints">0</div>
+            <div class="kpi-sub">Customer service</div>
+        </div>
+
+    </div>
+
+    <!-- MAIN SECTIONS -->
+    <div class="dashboard-grid">
+
+        <div class="dashboard-card">
+            <div class="card-title">Sales Overview</div>
+            <div id="sales-overview">
+                Loading...
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <div class="card-title">Manufacturing</div>
+            <div id="manufacturing-overview">
+                Loading...
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <div class="card-title">Installation</div>
+
+            <div class="metric-row">
+                <span>Pending Installation</span>
+                <strong id="installation-pending">0</strong>
+            </div>
+
+            <div class="metric-row">
+                <span>Completed Installation</span>
+                <strong id="installation-completed">0</strong>
+            </div>
+
+            <div class="metric-row">
+                <span>TAT Adherence</span>
+                <strong id="installation-tat">0%</strong>
+            </div>
+        </div>
+
+        <div class="dashboard-card">
+            <div class="card-title">Service Complaints</div>
+
+            <div class="priority-row high">
+                <span>High</span>
+                <strong id="complaint-high">0</strong>
+            </div>
+
+            <div class="priority-row medium">
+                <span>Medium</span>
+                <strong id="complaint-medium">0</strong>
+            </div>
+
+            <div class="priority-row low">
+                <span>Low</span>
+                <strong id="complaint-low">0</strong>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ALERTS -->
+    <div class="dashboard-card alerts-card">
+
+        <div class="card-title">Management Alerts</div>
+
+        <div id="management-alerts">
+            <div class="alert-item">
+                No alerts
+            </div>
+        </div>
+
+    </div>
+
+</div>

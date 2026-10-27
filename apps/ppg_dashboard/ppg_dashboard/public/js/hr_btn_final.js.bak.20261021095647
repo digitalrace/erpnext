@@ -1,0 +1,82 @@
+/* PPG_HR_DESK_BUTTON_PERMANENT_V1 */
+(function () {
+    if (window.__ppgHRButtonPermanent) return;
+    window.__ppgHRButtonPermanent = true;
+
+    function isHRUser() {
+        const roles = (window.frappe?.boot?.user?.roles || []);
+        return (
+            (roles.includes("HR Manager") || roles.includes("HR User")) &&
+            !roles.includes("System Manager")
+        );
+    }
+
+    function placeButton() {
+        if (!window.frappe || !window.jQuery) return;
+
+        let button = document.querySelector("#custom-hr-btn");
+
+        if (!isHRUser()) {
+            button?.remove();
+            return;
+        }
+
+        if (!button) {
+            button = document.createElement("li");
+            button.id = "custom-hr-btn";
+            button.className = "nav-item";
+            button.style.cssText =
+                "display:inline-flex;align-items:center;margin-right:8px;";
+
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "btn btn-primary btn-sm";
+            btn.textContent = "HR Dashboard";
+            btn.style.cssText =
+                "background:#087f8c;color:white;border:0;border-radius:8px;" +
+                "padding:7px 13px;font-weight:600;white-space:nowrap;cursor:pointer;";
+            btn.addEventListener("click", function () {
+                frappe.set_route("management-dashboard");
+            });
+
+            button.appendChild(btn);
+        }
+
+        const bell = document.querySelector(".desktop-notifications");
+
+        if (bell && bell.parentElement) {
+            // Move the existing button immediately before the bell.
+            if (button.parentElement !== bell.parentElement ||
+                button.nextElementSibling !== bell) {
+                bell.parentElement.insertBefore(button, bell);
+            }
+        }
+    }
+
+    function start() {
+        placeButton();
+
+        // Keep the placement correct if Frappe re-renders the navbar.
+        const observer = new MutationObserver(function () {
+            placeButton();
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+
+        if (window.frappe?.router) {
+            frappe.router.on("change", function () {
+                setTimeout(placeButton, 300);
+                setTimeout(placeButton, 1000);
+            });
+        }
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", start, { once: true });
+    } else {
+        start();
+    }
+})();

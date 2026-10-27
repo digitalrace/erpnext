@@ -1,0 +1,103 @@
+/* PPG_ROLE_BASED_DESK_BUTTON_V2 */
+(function () {
+    if (window.__ppgRoleDeskButtonV2) return;
+    window.__ppgRoleDeskButtonV2 = true;
+
+    function getDashboardType() {
+        const roles = window.frappe?.boot?.user?.roles || [];
+
+        // Management role takes priority over HR roles.
+        if (
+            roles.includes("Management Dashboard") ||
+            roles.includes("System Manager")
+        ) {
+            return "management";
+        }
+
+        if (
+            roles.includes("HR Manager") ||
+            roles.includes("HR User")
+        ) {
+            return "hr";
+        }
+
+        return null;
+    }
+
+    function placeButton() {
+        if (!window.frappe || !window.jQuery) return;
+
+        const type = getDashboardType();
+        let item = document.querySelector("#custom-hr-btn");
+
+        // Users without an authorized dashboard role see no custom button.
+        if (!type) {
+            item?.remove();
+            return;
+        }
+
+        if (!item) {
+            item = document.createElement("li");
+            item.id = "custom-hr-btn";
+            item.className = "nav-item";
+            item.style.cssText =
+                "display:inline-flex;align-items:center;margin-right:8px;";
+
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "btn btn-primary btn-sm";
+            btn.style.cssText =
+                "background:#087f8c;color:white;border:0;border-radius:8px;" +
+                "padding:7px 13px;font-weight:600;white-space:nowrap;cursor:pointer;";
+
+            btn.addEventListener("click", function () {
+                const currentType = getDashboardType();
+                if (currentType) {
+                    frappe.set_route("management-dashboard");
+                }
+            });
+
+            item.appendChild(btn);
+        }
+
+        const btn = item.querySelector("button");
+        if (btn) {
+            btn.textContent = type === "management"
+                ? "Management Dashboard"
+                : "HR Dashboard";
+        }
+
+        const bell = document.querySelector(".desktop-notifications");
+        if (bell?.parentElement) {
+            if (
+                item.parentElement !== bell.parentElement ||
+                item.nextElementSibling !== bell
+            ) {
+                bell.parentElement.insertBefore(item, bell);
+            }
+        }
+    }
+
+    function start() {
+        placeButton();
+
+        const observer = new MutationObserver(placeButton);
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+
+        if (window.frappe?.router) {
+            frappe.router.on("change", function () {
+                setTimeout(placeButton, 300);
+                setTimeout(placeButton, 1000);
+            });
+        }
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", start, { once: true });
+    } else {
+        start();
+    }
+})();

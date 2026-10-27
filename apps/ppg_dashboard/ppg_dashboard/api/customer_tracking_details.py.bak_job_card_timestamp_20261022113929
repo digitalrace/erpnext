@@ -1,0 +1,485 @@
+import frappe
+
+
+def _fields(doctype):
+    if not frappe.db.exists("DocType", doctype):
+        return set()
+    return {f.fieldname for f in frappe.get_meta(doctype).fields}
+
+
+def _public_file(path):
+    # Never return private attachments to a guest tracking page.
+    if isinstance(path, str) and path.startswith("/files/"):
+        return path
+    return None
+
+
+def _num(value):
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _serial_numbers_by_order_item(rows):
+    """Map serials to the exact Sales Order Item through its Work Orders."""
+    result = {}
+    item_ids = [r.get("name") for r in rows if r.get("name")]
+    if not item_ids:
+        return result
+
+    def add_serials(item_id, value):
+        if not item_id or not value:
+            return
+        current = result.get(item_id, "")
+        values = []
+        for part in (str(current) + "," + str(value)).replace("\n", ",").split(","):
+            part = part.strip()
+            if part and part not in values:
+                values.append(part)
+        if values:
+            result[item_id] = ", ".join(values)
+
+    # 1. Submitted Delivery Notes, linked to the exact Sales Order Item row.
+    dn_fields = _fields("Delivery Note Item")
+    if {"serial_no", "so_detail"}.issubset(dn_fields):
+        placeholders = ", ".join(["%s"] * len(item_ids))
+        serial_rows = frappe.db.sql(
+            f"""
+            SELECT dni.so_detail,
+                   GROUP_CONCAT(DISTINCT dni.serial_no SEPARATOR ', ') AS serial_numbers
+            FROM `tabDelivery Note Item` dni
+            INNER JOIN `tabDelivery Note` dn ON dn.name = dni.parent
+            WHERE dn.docstatus = 1
+              AND dni.so_detail IN ({placeholders})
+              AND COALESCE(dni.serial_no, '') != ''
+            GROUP BY dni.so_detail
+            """,
+            tuple(item_ids),
+            as_dict=True,
+        )
+        for row in serial_rows:
+            add_serials(row.get("so_detail"), row.get("serial_numbers"))
+
+    # 2. Serial No master records generated/linked against a Work Order.
+    wo_fields = _fields("Work Order")
+    sn_fields = _fields("Serial No")
+    work_orders = []
+    if {"sales_order_item", "sales_order"}.issubset(wo_fields):
+        work_orders = frappe.get_all(
+            "Work Order",
+            filters={
+                "sales_order_item": ["in", item_ids],
+                "docstatus": ["!=", 2],
+            },
+            fields=["name", "sales_order_item"],
+            limit_page_length=500,
+        )
+
+    if work_orders and {"serial_no", "work_order"}.issubset(sn_fields):
+        wo_ids = [wo.name for wo in work_orders if wo.get("name")]
+        if wo_ids:
+            placeholders = ", ".join(["%s"] * len(wo_ids))
+            serial_rows = frappe.db.sql(
+                f"""
+                SELECT wo.sales_order_item AS so_detail,
+                       GROUP_CONCAT(DISTINCT sn.serial_no SEPARATOR ', ') AS serial_numbers
+                FROM `tabSerial No` sn
+                INNER JOIN `tabWork Order` wo ON wo.name = sn.work_order
+                WHERE wo.name IN ({placeholders})
+                  AND COALESCE(sn.serial_no, '') != ''
+                  AND COALESCE(wo.docstatus, 0) != 2
+                GROUP BY wo.sales_order_item
+                """,
+                tuple(wo_ids),
+                as_dict=True,
+            )
+            for row in serial_rows:
+                add_serials(row.get("so_detail"), row.get("serial_numbers"))
+
+    # 3. Custom panel-serial child table on Work Order, if it contains serial fields.
+    if work_orders and frappe.db.exists("DocType", "Work Order"):
+        wo_meta = frappe.get_meta("Work Order")
+        table_field = wo_meta.get_field("custom_panel_serial_details")
+        child_doctype = (
+            table_field.options
+            if table_field and table_field.fieldtype == "Table"
+            else None
+        )
+
+        if child_doctype and frappe.db.exists("DocType", child_doctype):
+            child_meta = frappe.get_meta(child_doctype)
+            serial_fields = [
+                field.fieldname
+                for field in child_meta.fields
+                if "serial" in (field.fieldname or "").lower()
+                and field.fieldtype not in ("Section Break", "Column Break", "Tab Break")
+            ]
+
+            if serial_fields:
+                child_get_fields = ["parent"] + serial_fields
+                if "parentfield" in _fields(child_doctype):
+                    child_get_fields.append("parentfield")
+                for wo in work_orders:
+                    filters = {
+                        "parent": wo.name,
+                        "parenttype": "Work Order",
+                    }
+                    if "parentfield" in _fields(child_doctype):
+                        filters["parentfield"] = table_field.fieldname
+                    child_rows = frappe.get_all(
+                        child_doctype,
+                        filters=filters,
+                        fields=list(dict.fromkeys(child_get_fields)),
+                        limit_page_length=500,
+                    )
+                    for child in child_rows:
+                        for fieldname in serial_fields:
+                            add_serials(
+                                wo.get("sales_order_item"),
+                                child.get(fieldname),
+                            )
+
+    # 4. Direct serial field on the Sales Order Item, where configured.
+    for row in rows:
+        if row.get("serial_no"):
+            add_serials(row.get("name"), row.get("serial_no"))
+
+    return result
+
+def _delivery_records_by_order_item(rows):
+    """Aggregate submitted Delivery Notes against the exact Sales Order Item row."""
+    item_ids = [r.get("name") for r in rows if r.get("name")]
+    dn_fields = _fields("Delivery Note Item")
+    if not item_ids or not {"so_detail", "qty"}.issubset(dn_fields):
+        return {}
+    placeholders = ", ".join(["%s"] * len(item_ids))
+    result_rows = frappe.db.sql(
+        f"""
+        SELECT dni.so_detail,
+               SUM(COALESCE(dni.qty, 0)) AS delivered_from_notes,
+               MAX(dn.posting_date) AS last_delivery_date,
+               COUNT(DISTINCT dn.name) AS delivery_note_count
+        FROM `tabDelivery Note Item` dni
+        INNER JOIN `tabDelivery Note` dn ON dn.name = dni.parent
+        WHERE dn.docstatus = 1
+          AND dni.so_detail IN ({placeholders})
+        GROUP BY dni.so_detail
+        """,
+        tuple(item_ids),
+        as_dict=True,
+    )
+    return {r.get("so_detail"): r for r in result_rows if r.get("so_detail")}
+
+
+def _item_delivery(row, delivery_record, parent_delivery_date):
+    ordered = _num(row.get("qty"))
+    delivered = max(
+        _num(row.get("delivered_qty")),
+        _num(delivery_record.get("delivered_from_notes")) if delivery_record else 0,
+    )
+    delivered = min(ordered, delivered) if ordered > 0 else delivered
+    percent = min(100.0, max(0.0, delivered / ordered * 100)) if ordered else 0.0
+    if ordered > 0 and delivered >= ordered - 0.0001:
+        status = "Delivered"
+    elif delivered > 0:
+        status = "Partially delivered"
+    else:
+        status = "Awaiting dispatch"
+    expected = row.get("delivery_date") or row.get("schedule_date") or parent_delivery_date
+    return {
+        "status": status,
+        "ordered_qty": ordered,
+        "delivered_qty": delivered,
+        "delivery_percent": round(percent, 1),
+        "expected_delivery_date": expected,
+        "last_delivery_date": delivery_record.get("last_delivery_date") if delivery_record else None,
+        "delivery_note_count": int(_num(delivery_record.get("delivery_note_count"))) if delivery_record else 0,
+    }
+
+
+def _work_order_rank(work_order):
+    status = str(work_order.get("status") or "").strip().lower()
+    if status == "in process":
+        return 0
+    if status in ("not started", "draft", "stock reserved", "stock partially reserved"):
+        return 1
+    if status in ("completed", "closed"):
+        return 3
+    return 2
+
+
+def _production_for_item(item, all_items, work_orders):
+    """Build a customer-safe production payload for one Sales Order Item."""
+    item_code = item.get("item_code")
+    item_row_id = item.get("name")
+    matching = []
+
+    for wo in work_orders:
+        linked_line = wo.get("sales_order_item")
+        if linked_line:
+            if linked_line == item_row_id:
+                matching.append(wo)
+        elif item_code and wo.get("production_item") == item_code:
+            matching.append(wo)
+
+    # It is safe to use the order's Work Orders as a fallback only if the order
+    # has exactly one item row; never show one product's progress for another.
+    if not matching and len(all_items) == 1:
+        matching = list(work_orders)
+
+    matching.sort(key=_work_order_rank)
+    wo = matching[0] if matching else None
+    operations, cards = [], []
+
+    if wo and frappe.db.exists("DocType", "Work Order Operation"):
+        op_fields = _fields("Work Order Operation")
+        get_fields = ["parent"] + [
+            f for f in (
+                "operation", "workstation", "status", "completed_qty", "sequence_id"
+            ) if f in op_fields
+        ]
+        order_by = "sequence_id asc" if "sequence_id" in op_fields else "modified asc"
+        operations = frappe.get_all(
+            "Work Order Operation",
+            filters={
+                "parent": wo.name,
+                "parenttype": "Work Order",
+                "parentfield": "operations",
+            },
+            fields=get_fields,
+            order_by=order_by,
+            limit_page_length=300,
+        )
+
+    jc_fields = _fields("Job Card")
+    if wo and jc_fields:
+        get_fields = [
+            f for f in (
+                "name", "work_order", "operation", "workstation", "status",
+                "total_completed_qty", "for_quantity", "custom_customer_tracking_image", "modified"
+            ) if f in jc_fields
+        ]
+        cards = frappe.get_all(
+            "Job Card",
+            filters={"work_order": wo.name, "docstatus": ["!=", 2]},
+            fields=get_fields,
+            order_by="modified desc",
+            limit_page_length=500,
+        )
+
+    card = next(
+        (c for c in cards if str(c.get("status") or "").lower() == "work in progress"),
+        None,
+    )
+
+    if card:
+        operation = next(
+            (o for o in operations if o.get("operation") == card.get("operation")),
+            None,
+        )
+    else:
+        operation = next(
+            (o for o in operations if str(o.get("status") or "").lower() != "completed"),
+            operations[-1] if operations else None,
+        )
+        matches = [
+            c for c in cards
+            if operation and c.get("operation") == operation.get("operation")
+        ]
+        card = matches[0] if matches else None
+
+    stage = (
+        (card.get("operation") if card else None)
+        or (operation.get("operation") if operation else None)
+    )
+    wo_status = str(wo.get("status") or "") if wo else ""
+    if not stage:
+        stage = "Production completed" if wo_status.lower() in ("completed", "closed") else "Awaiting production planning"
+
+    workstation = (
+        (card.get("workstation") if card else None)
+        or (operation.get("workstation") if operation else None)
+    )
+    raw_status = (
+        (card.get("status") if card else None)
+        or (operation.get("status") if operation else None)
+        or wo_status
+        or "Not Started"
+    )
+    status_text = str(raw_status).replace("_", " ").title()
+    done = _num(card.get("total_completed_qty")) if card else (
+        _num(operation.get("completed_qty")) if operation else _num(wo.get("produced_qty")) if wo else 0
+    )
+    target = _num(card.get("for_quantity")) if card else (_num(wo.get("qty")) if wo else 0)
+    progress = min(100.0, max(0.0, done / target * 100)) if target else 0
+    photo = _public_file(card.get("custom_customer_tracking_image") if card else None)
+
+    return {
+        "stage": stage,
+        "workstation": workstation,
+        "status": status_text if wo else "Not Started",
+        "photo_url": photo,
+        "photo_note": None if photo else "No customer-shareable photo has been uploaded for this operation yet.",
+        "completed_qty": done,
+        "stage_qty": target,
+        "progress_percent": round(progress, 1),
+        "operations": [
+            {
+                "operation": o.get("operation") or "Production operation",
+                "workstation": o.get("workstation"),
+                "status": str(o.get("status") or "Pending").title(),
+                "state": (
+                    "completed" if str(o.get("status") or "").lower() == "completed"
+                    else "active" if str(o.get("status") or "").lower() == "work in progress"
+                    else "pending"
+                ),
+            }
+            for o in operations
+        ],
+    }
+
+
+def build_details(order_name):
+    # Only fields needed for customer-visible product information are returned.
+    soi_fields = _fields("Sales Order Item")
+    # Always fetch the Sales Order Item row ID for Work Order matching.
+    wanted = ["name"] + [
+        f for f in ("item_code", "item_name", "qty", "delivered_qty", "serial_no", "delivery_date", "schedule_date")
+        if f in soi_fields
+    ]
+    rows = frappe.get_all(
+        "Sales Order Item",
+        filters={"parent": order_name, "parenttype": "Sales Order"},
+        fields=wanted,
+        limit_page_length=200,
+    )
+    serials_by_item = _serial_numbers_by_order_item(rows)
+    deliveries_by_item = _delivery_records_by_order_item(rows)
+    so_meta_fields = _fields("Sales Order")
+    parent_delivery_date = (
+        frappe.db.get_value("Sales Order", order_name, "delivery_date")
+        if "delivery_date" in so_meta_fields else None
+    )
+
+    item_rows = []
+    for row in rows:
+        image = None
+        if row.get("item_code") and frappe.db.exists("Item", row.item_code):
+            image = _public_file(frappe.db.get_value("Item", row.item_code, "image"))
+        serials = serials_by_item.get(row.get("name"), "")
+        item_rows.append({
+            "name": row.get("name"),
+            "item": row.get("item_name") or row.get("item_code") or "Product",
+            "item_code": row.get("item_code"),
+            "serial_numbers": serials,
+            "qty": _num(row.get("qty")),
+            "delivered_qty": _num(row.get("delivered_qty")),
+            "delivery": _item_delivery(
+                row, deliveries_by_item.get(row.get("name")), parent_delivery_date
+            ),
+            "image": image,
+        })
+
+    wo_fields = _fields("Work Order")
+    # "modified" is a standard field; fetch it explicitly.
+    wo_query_fields = ["name", "modified"] + [
+        f for f in (
+            "status", "qty", "produced_qty", "production_item", "sales_order_item"
+        ) if f in wo_fields
+    ]
+
+    work_orders = frappe.get_all(
+        "Work Order",
+        filters={"sales_order": order_name, "docstatus": ["!=", 2]},
+        fields=list(dict.fromkeys(wo_query_fields)),
+        order_by="modified desc",
+        limit_page_length=200,
+    ) if "sales_order" in wo_fields else []
+
+    for item in item_rows:
+        item["production"] = _production_for_item(item, item_rows, work_orders)
+
+        linked_work_orders = [
+            wo for wo in work_orders
+            if wo.get("sales_order_item") == item.get("name")
+            and wo.get("modified")
+        ]
+        latest_modified = max(
+            (wo.get("modified") for wo in linked_work_orders),
+            default=None,
+        )
+        item["last_updated"] = (
+            str(latest_modified) if latest_modified else None
+        )
+
+    default_production = item_rows[0]["production"] if item_rows else _production_for_item({}, [], [])
+
+    # Submitted Sales Invoices linked to this Sales Order. Shared invoices
+    # are allocated proportionally by their item amounts.
+    so_fields = _fields("Sales Order")
+    summary_fields = [f for f in ("grand_total", "currency", "advance_paid") if f in so_fields]
+    so = frappe.db.get_value("Sales Order", order_name, summary_fields, as_dict=True) or frappe._dict()
+
+    invoice_rows = []
+    if frappe.db.exists("DocType", "Sales Invoice") and frappe.db.exists("DocType", "Sales Invoice Item"):
+        invoice_rows = frappe.db.sql("""
+            SELECT si.name,
+                   COALESCE(si.grand_total, 0) AS invoice_total,
+                   COALESCE(si.outstanding_amount, 0) AS outstanding_amount,
+                   COALESCE((
+                       SELECT SUM(sii.amount)
+                       FROM `tabSales Invoice Item` sii
+                       WHERE sii.parent = si.name AND sii.sales_order = %s
+                   ), 0) AS linked_amount,
+                   COALESCE((
+                       SELECT SUM(sii2.amount)
+                       FROM `tabSales Invoice Item` sii2
+                       WHERE sii2.parent = si.name
+                   ), 0) AS total_item_amount
+            FROM `tabSales Invoice` si
+            WHERE si.docstatus = 1
+              AND COALESCE(si.is_return, 0) = 0
+              AND EXISTS (
+                  SELECT 1 FROM `tabSales Invoice Item` sii3
+                  WHERE sii3.parent = si.name AND sii3.sales_order = %s
+              )
+        """, (order_name, order_name), as_dict=True)
+
+    invoiced, paid_from_invoices = 0.0, 0.0
+    for inv in invoice_rows:
+        linked = _num(inv.get("linked_amount"))
+        item_total = _num(inv.get("total_item_amount"))
+        if linked <= 0:
+            continue
+        ratio = min(1.0, linked / item_total) if item_total > 0 else 1.0
+        invoice_total = _num(inv.get("invoice_total")) * ratio
+        invoice_due = _num(inv.get("outstanding_amount")) * ratio
+        invoiced += invoice_total
+        paid_from_invoices += max(0.0, invoice_total - invoice_due)
+
+    order_total = _num(so.get("grand_total"))
+    paid = paid_from_invoices if invoice_rows else _num(so.get("advance_paid"))
+    paid = min(order_total, max(0.0, paid))
+    balance = max(0.0, order_total - paid)
+    payment_status = (
+        "Paid" if order_total > 0 and balance <= 0.01
+        else "Partially paid" if paid > 0.01
+        else "Payment pending"
+    )
+
+    return {
+        "items": [
+            {key: value for key, value in item.items() if key != "name"}
+            for item in item_rows
+        ],
+        "production": default_production,
+        "payment": {
+            "currency": so.get("currency") or "INR",
+            "order_total": round(order_total, 2),
+            "invoiced_amount": round(invoiced, 2),
+            "paid_amount": round(paid, 2),
+            "balance_due": round(balance, 2),
+            "status": payment_status,
+        },
+    }

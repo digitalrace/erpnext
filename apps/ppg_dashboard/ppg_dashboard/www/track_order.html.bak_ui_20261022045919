@@ -1,0 +1,131 @@
+{% extends "templates/web.html" %}
+{% block title %}Track Your Order{% endblock %}
+{% block page_content %}
+<style>
+.ppg-track-wrap{max-width:860px;margin:34px auto 64px;padding:0 18px;color:#162c27}
+.ppg-track-hero{background:#103f35;color:#fff;padding:34px;border-radius:20px}
+.ppg-track-kicker{color:#a9dfc8;font-size:12px;font-weight:800;letter-spacing:2px}
+.ppg-track-hero h1{font-size:clamp(28px,4vw,40px);margin:8px 0;color:#fff}
+.ppg-track-hero p{color:#d7e9e2;margin:0}
+.ppg-track-form{display:flex;gap:10px;margin-top:25px}
+.ppg-track-input{flex:1;min-width:0;padding:14px;border:1px solid #d4ded9;border-radius:10px;font-size:16px}
+.ppg-track-btn{background:#d1f06a;border:0;border-radius:10px;padding:13px 22px;font-weight:800;color:#19372c;cursor:pointer}
+.ppg-track-btn:disabled{opacity:.6;cursor:wait}
+.ppg-track-msg{padding:18px 0;color:#53675f}
+.ppg-track-result{margin-top:22px}
+.ppg-track-status{background:#f0f6f2;border:1px solid #dce9e0;border-radius:14px;padding:22px;margin-bottom:18px}
+.ppg-track-status h2{margin:0 0 6px;font-size:25px;color:#174f3c}
+.ppg-track-meta{color:#52665c;font-size:14px}
+.ppg-track-section{background:#fff;border:1px solid #e1e8e3;border-radius:14px;padding:20px;margin-top:16px}
+.ppg-track-section h3{margin:0 0 16px;font-size:18px}
+.ppg-track-line{display:grid;grid-template-columns:26px 1fr;gap:12px;margin:17px 0}
+.ppg-track-dot{width:13px;height:13px;border-radius:50%;background:#d4ddd7;margin:4px auto}
+.ppg-track-line.completed .ppg-track-dot{background:#25855f}
+.ppg-track-line.active .ppg-track-dot{background:#d09a27;box-shadow:0 0 0 4px #fbf1d6}
+.ppg-track-line strong{display:block}
+.ppg-track-line p{margin:4px 0;color:#60716a;font-size:14px}
+.ppg-track-date{font-size:12px;color:#7c8b84}
+.ppg-track-items{width:100%;border-collapse:collapse}
+.ppg-track-items th,.ppg-track-items td{text-align:left;padding:10px 8px;border-bottom:1px solid #edf1ee;font-size:14px}
+.ppg-track-items th{color:#64756d;font-size:12px}
+.ppg-track-small{font-size:12px;color:#74837c;margin-top:18px}
+@media(max-width:560px){.ppg-track-hero{padding:24px}.ppg-track-form{flex-direction:column}.ppg-track-btn{width:100%}.ppg-track-section{padding:15px}}
+</style>
+
+<section class="ppg-track-wrap">
+  <div class="ppg-track-hero">
+    <div class="ppg-track-kicker">POWER PARTNER</div>
+    <h1>Track your order</h1>
+    <p>Enter the Tracking ID shared with you to view your order progress.</p>
+    <form id="ppg-track-form" class="ppg-track-form">
+      <input id="ppg-track-id" class="ppg-track-input"
+        type="text" placeholder="Example: PPG-0123456789ABCDEF0123456789ABCDEF"
+        autocomplete="off" required aria-label="Tracking ID">
+      <button id="ppg-track-submit" class="ppg-track-btn" type="submit">Track order</button>
+    </form>
+  </div>
+  <div id="ppg-track-message" class="ppg-track-msg" aria-live="polite"></div>
+  <div id="ppg-track-result" class="ppg-track-result"></div>
+  <p class="ppg-track-small">For help with your order, contact the Power Partner team and share your Tracking ID.</p>
+</section>
+
+<script>
+(function () {
+  const form = document.getElementById("ppg-track-form");
+  if (!form) return;
+  const input = document.getElementById("ppg-track-id");
+  const button = document.getElementById("ppg-track-submit");
+  const message = document.getElementById("ppg-track-message");
+  const output = document.getElementById("ppg-track-result");
+
+  function esc(value) {
+    return String(value == null ? "" : value).replace(/[&<>"']/g, function (c) {
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function showOrder(data) {
+    const stages = (data.stages || []).map(function (stage) {
+      const state = ["completed", "active", "pending"].includes(stage.state)
+        ? stage.state : "pending";
+      return '<div class="ppg-track-line ' + state + '">' +
+        '<div class="ppg-track-dot"></div><div><strong>' + esc(stage.label) +
+        '</strong><p>' + esc(stage.detail) + '</p>' +
+        (stage.date ? '<div class="ppg-track-date">' + esc(stage.date) + '</div>' : '') +
+        '</div></div>';
+    }).join("");
+
+    const items = (data.items || []).map(function (item) {
+      return '<tr><td>' + esc(item.item) + '</td><td>' + esc(item.qty) +
+        '</td><td>' + esc(item.delivered_qty) + '</td></tr>';
+    }).join("");
+
+    output.innerHTML =
+      '<div class="ppg-track-status"><div class="ppg-track-meta">CURRENT STATUS</div>' +
+      '<h2>' + esc(data.overall_status) + '</h2>' +
+      '<div class="ppg-track-meta">Order date: ' + esc(data.order_date || "—") +
+      ' &nbsp; · &nbsp; Estimated delivery: ' +
+      esc(data.estimated_delivery_date || "Not available") + '</div></div>' +
+      '<div class="ppg-track-section"><h3>Order progress</h3>' + stages + '</div>' +
+      (items ? '<div class="ppg-track-section"><h3>Items in your order</h3>' +
+        '<div style="overflow-x:auto"><table class="ppg-track-items"><thead><tr>' +
+        '<th>Item</th><th>Quantity</th><th>Delivered</th></tr></thead><tbody>' +
+        items + '</tbody></table></div></div>' : '');
+  }
+
+  form.addEventListener("submit", async function (event) {
+    event.preventDefault();
+    const token = input.value.trim();
+    if (!token) return;
+
+    button.disabled = true;
+    message.textContent = "Checking your tracking ID…";
+    output.innerHTML = "";
+
+    try {
+      const url = "/api/method/ppg_dashboard.api.customer_tracking.get_order_tracking?tracking_id=" +
+        encodeURIComponent(token);
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {"Accept": "application/json"},
+        credentials: "same-origin"
+      });
+      const body = await response.json();
+      const data = body.message || {};
+
+      if (!response.ok || !data.found) {
+        message.textContent = data.message ||
+          "Unable to find this Tracking ID. Please check it and try again.";
+      } else {
+        message.textContent = "";
+        showOrder(data);
+      }
+    } catch (error) {
+      message.textContent = "Could not check the Tracking ID. Please try again.";
+    } finally {
+      button.disabled = false;
+    }
+  });
+})();
+</script>
+{% endblock %}

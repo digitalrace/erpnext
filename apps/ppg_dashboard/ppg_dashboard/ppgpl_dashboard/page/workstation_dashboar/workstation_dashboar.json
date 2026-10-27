@@ -3,14 +3,21 @@
  "creation": "2026-07-22 16:07:56.425737",
  "docstatus": 0,
  "doctype": "Page",
- "idx": 0,
- "modified": "2026-07-28 17:35:23.007069",
+ "idx": 2,
+ "modified": "2026-10-21 18:12:28.042642",
  "modified_by": "Administrator",
  "module": "PPGPL Dashboard",
  "name": "workstation-dashboar",
  "owner": "Administrator",
  "page_name": "workstation-dashboar",
- "roles": [],
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Management Dashboard"
+  }
+ ],
  "script": null,
  "standard": "Yes",
  "style": null,

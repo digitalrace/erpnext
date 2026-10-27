@@ -1,0 +1,909 @@
+{% extends "templates/web.html" %}
+{% block title %}Order Tracking | Power Partner Global{% endblock %}
+{% block page_content %}
+<style>
+body:has(.ppg-industrial-track){background:#f2f6ef!important;overflow-x:hidden}
+body:has(.ppg-industrial-track) .navbar,
+body:has(.ppg-industrial-track) header.navbar,
+body:has(.ppg-industrial-track) .web-header,
+body:has(.ppg-industrial-track) .web-footer,
+body:has(.ppg-industrial-track) footer:not(.ppg-industrial-footer):not(.ppg-i-footer){display:none!important}
+body:has(.ppg-industrial-track) .page-content,
+body:has(.ppg-industrial-track) .page-content-wrapper,
+body:has(.ppg-industrial-track) .web-page-content,
+body:has(.ppg-industrial-track) .main-section,
+body:has(.ppg-industrial-track) .container{max-width:none!important}
+body:has(.ppg-industrial-track) .page-content,
+body:has(.ppg-industrial-track) .page-content-wrapper,
+body:has(.ppg-industrial-track) .web-page-content{padding:0!important;margin:0!important}
+.ppg-industrial-track,.ppg-industrial-track *{box-sizing:border-box}
+.ppg-industrial-track{
+ --forest:#103c30;--green:#216547;--lime:#d8f28a;
+ --line:#e2eade;--muted:#7c887f;
+ position:relative;left:calc(50% - 50vw);width:100vw;max-width:100vw;
+ margin:0;background:#f2f6ef;color:#20362a;font-family:inherit;
+ font-size:13px;overflow:hidden;
+}
+.ppg-i-container{width:100%;max-width:1580px;margin:0 auto;padding:0 34px}
+.ppg-i-header{height:58px;background:white;border-bottom:1px solid #e6ebe3}
+.ppg-i-header-inner{height:100%;display:flex;align-items:center;gap:28px}
+.ppg-i-brand{display:flex;align-items:center;gap:10px;min-width:270px}
+.ppg-i-logo{width:38px;height:38px;display:grid;place-items:center;border-radius:50%;border:3px solid #78aa5c;background:#eef5e7;color:#1d5b3e;font-size:12px;font-weight:950}
+.ppg-i-brand strong{display:block;color:#173c2c;font-size:13px;font-weight:950;letter-spacing:.45px}
+.ppg-i-brand small{display:block;color:#819085;font-size:8px;letter-spacing:1.5px;margin-top:3px}
+.ppg-i-nav{height:36px;display:flex;align-items:center;gap:9px;border-bottom:2px solid #2e6c49;color:#294737;font-size:10px;font-weight:900;letter-spacing:.8px;white-space:nowrap}
+.ppg-i-nav svg{width:18px;height:18px}
+.ppg-i-header-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.ppg-i-help-icon{display:grid;place-items:center;color:#245a40}
+.ppg-i-help-icon svg{width:22px;height:22px}
+.ppg-i-help{color:#65736a;font-size:10px;line-height:1.6}
+.ppg-i-help strong{display:block;color:#254331}
+.ppg-i-contact{padding:11px 16px;border:0;border-radius:8px;background:var(--lime);color:#263f2b!important;text-decoration:none!important;font-size:10px;font-weight:900;white-space:nowrap}
+.ppg-i-cover{
+ color:white;
+ background-color:#103c30;
+ background-image:linear-gradient(90deg,rgba(7,44,33,.98) 0%,rgba(8,51,38,.93) 43%,rgba(8,47,36,.65) 100%),url("https://www.lwe-engineering.com/wp-content/uploads/2021/02/about_lwe_5.jpg");
+ background-size:cover;background-position:center 48%;
+}
+.ppg-i-cover-inner{display:grid;grid-template-columns:minmax(0,1fr) 290px;align-items:center;gap:30px;min-height:177px;padding-top:24px;padding-bottom:24px}
+.ppg-i-kicker{color:#d8f28a;font-size:10px;font-weight:950;letter-spacing:1.5px}
+.ppg-i-cover h1{margin:11px 0 9px;color:white!important;font-size:clamp(31px,3.15vw,45px);line-height:1.1;letter-spacing:-1.2px;font-weight:900}
+.ppg-i-cover h1 span{color:#d8f28a}
+.ppg-i-cover p{max-width:680px;margin:0;color:#e0ebe3;font-size:12px;line-height:1.7}
+.ppg-i-token{width:100%;padding:17px 18px;border:1px solid #c7e0c655;border-radius:14px;background:#123f31e8;box-shadow:0 12px 30px #0002}
+.ppg-i-token label{display:block;color:#c5ddce;font-size:9px;font-weight:900;letter-spacing:1.2px}
+.ppg-i-token-row{display:flex;align-items:center;gap:7px;margin-top:8px}
+.ppg-i-token-row strong{flex:1;color:#fff;font-size:14px;overflow-wrap:anywhere}
+.ppg-i-copy{border:0;border-radius:6px;background:#d8f28a;padding:7px 9px;color:#24412d;font-size:9px;font-weight:900;cursor:pointer}
+.ppg-i-token-note{margin-top:7px;color:#c5dacb;font-size:9px}
+.ppg-i-content{position:relative}
+.ppg-i-order-strip{position:relative;z-index:2;display:grid;grid-template-columns:minmax(230px,1.6fr) repeat(5,minmax(105px,1fr));align-items:center;gap:0;padding:15px 16px;margin-top:-1px;border:1px solid var(--line);border-radius:0 0 13px 13px;background:white;box-shadow:0 8px 22px #183e2610}
+.ppg-i-product{display:flex;align-items:center;gap:12px;min-width:0;padding-right:14px}
+.ppg-i-product-img,.ppg-i-product-fallback{width:66px;height:60px;flex:0 0 66px;object-fit:cover;border-radius:8px;background:#edf3e8}
+.ppg-i-product-fallback{display:grid;place-items:center;color:#50764d;font-size:11px;font-weight:950}
+.ppg-i-label{display:block;margin-bottom:5px;color:#7f8a80;font-size:9px;font-weight:950;letter-spacing:.65px}
+.ppg-i-product-name{display:block;color:#183b2d;font-size:13px;line-height:1.4;font-weight:900;overflow-wrap:anywhere}
+.ppg-i-product-code{display:block;margin-top:4px;color:#819084;font-size:9px;line-height:1.5;overflow-wrap:anywhere}
+.ppg-i-metric{display:flex;align-items:center;gap:8px;min-width:0;padding:7px 9px;border-left:1px solid #edf0eb}
+.ppg-i-metric-icon{width:30px;height:30px;flex:0 0 30px;border-radius:9px;background:#edf4e7;color:#36704b;display:grid;place-items:center}
+.ppg-i-metric-icon svg{width:16px;height:16px}
+.ppg-i-metric label{display:block;color:#899389;font-size:9px;line-height:1.45}
+.ppg-i-metric strong{display:block;margin-top:4px;color:#244331;font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+.ppg-i-status-badge{display:inline-block;padding:5px 7px;border-radius:5px;background:#e6f3ae;color:#3e5723;font-size:9px;font-weight:950}
+.ppg-i-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:12px}
+.ppg-i-stat{padding:14px 17px;border:1px solid var(--line);border-radius:11px;background:white;min-width:0}
+.ppg-i-stat label{display:block;color:#829085;font-size:9px;font-weight:950;letter-spacing:.7px}
+.ppg-i-stat strong{display:block;margin-top:7px;color:#214b35;font-size:16px;line-height:1.5;overflow-wrap:anywhere}
+.ppg-i-stat small{display:block;margin-top:4px;color:#859188;font-size:10px;line-height:1.5}
+.ppg-i-main-grid{display:grid;grid-template-columns:minmax(0,1.48fr) minmax(345px,.94fr);gap:14px;margin-top:13px;align-items:start}
+.ppg-i-col{display:flex;flex-direction:column;gap:13px;min-width:0}
+.ppg-i-panel{padding:17px;border:1px solid var(--line);border-radius:13px;background:white;min-width:0}
+.ppg-i-panel-head{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.ppg-i-panel-icon{width:36px;height:36px;flex:0 0 36px;border-radius:10px;background:#eaf3e3;color:#32734b;display:grid;place-items:center}
+.ppg-i-panel-icon svg{width:18px;height:18px}
+.ppg-i-panel-head h2{margin:0;color:#203b2d;font-size:12px;line-height:1.4;font-weight:950;letter-spacing:.35px}
+.ppg-i-panel-head p{margin:4px 0 0;color:#819086;font-size:10px;line-height:1.5}
+.ppg-i-head-right{margin-left:auto;color:#7c8c80;font-size:9px;white-space:nowrap}
+.ppg-i-live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#33a269;margin-right:5px}
+.ppg-i-production{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(0,.98fr);gap:16px}
+.ppg-i-job-photo,.ppg-i-photo-placeholder{width:100%;height:235px;display:block;object-fit:cover;border-radius:9px;background:#e9efe3}
+.ppg-i-photo-placeholder{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;gap:8px;padding:17px;border:1px solid #d4e0cd;color:white;background:linear-gradient(0deg,#092f25df,transparent 75%),url("https://images.unsplash.com/photo-1567789884554-0b844b597180?auto=format&fit=crop&w=900&q=80") center/cover}
+.ppg-i-photo-tag{padding:7px 10px;border-radius:6px;background:#d8f28a;color:#38522c;font-size:9px;font-weight:950;letter-spacing:.6px}
+.ppg-i-photo-caption{margin-top:7px;color:#89958b;font-size:9px;line-height:1.5}
+.ppg-i-op-label{color:#849087;font-size:9px;font-weight:950;letter-spacing:1px}
+.ppg-i-operation-name{margin:8px 0 9px;color:#1b5238;font-size:23px;line-height:1.2;font-weight:950;overflow-wrap:anywhere}
+.ppg-i-chip{display:inline-block;padding:6px 8px;border-radius:5px;background:#e8f3b5;color:#495d25;font-size:9px;font-weight:950}
+.ppg-i-machines{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px}
+.ppg-i-machine{display:flex;align-items:center;gap:7px;padding:8px;border:1px solid #e4ece0;border-radius:8px;min-width:0}
+.ppg-i-machine-icon{display:grid;place-items:center;width:29px;height:29px;flex:0 0 29px;background:#edf4e7;border-radius:8px;color:#3b704a}
+.ppg-i-machine-icon svg{width:15px;height:15px}
+.ppg-i-machine small{display:block;color:#89938a;font-size:8px}
+.ppg-i-machine strong{display:block;margin-top:3px;color:#365241;font-size:10px;line-height:1.4;overflow-wrap:anywhere}
+.ppg-i-progress-head{display:flex;justify-content:space-between;align-items:end;gap:8px;margin-top:17px}
+.ppg-i-progress-head span{color:#526a5a;font-size:10px;font-weight:850}
+.ppg-i-progress-head strong{color:#1e6641;font-size:23px;font-weight:950}
+.ppg-i-progress{height:8px;margin-top:7px;border-radius:9px;overflow:hidden;background:#e5ece1}
+.ppg-i-progress-fill{height:100%;background:linear-gradient(90deg,#176744,#72b76b);border-radius:9px}
+.ppg-i-divider{border:0;border-top:1px solid #e9eee5;margin:17px 0}
+.ppg-i-section-label{margin-bottom:6px;color:#53695a;font-size:9px;font-weight:950;letter-spacing:.65px}
+.ppg-i-operations{display:flex;flex-direction:column}
+.ppg-i-operation-row{display:grid;grid-template-columns:9px minmax(0,1fr) auto;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid #eff2ec}
+.ppg-i-operation-row:last-child{border-bottom:0}
+.ppg-i-op-dot{width:8px;height:8px;border-radius:50%;background:#cad4c7}
+.ppg-i-op-dot.completed{background:#2d8a58}
+.ppg-i-op-dot.active{background:#d0a340;box-shadow:0 0 0 3px #fbf1d5}
+.ppg-i-operation-row strong{display:block;color:#405648;font-size:10px}
+.ppg-i-operation-row small{display:block;color:#89948a;font-size:9px;margin-top:3px}
+.ppg-i-op-state{color:#829085;font-size:9px;white-space:nowrap}
+.ppg-i-timeline{display:flex;flex-direction:column}
+.ppg-i-stage{position:relative;display:grid;grid-template-columns:29px minmax(0,1fr) auto;gap:9px;align-items:start;padding-bottom:18px}
+.ppg-i-stage:last-child{padding-bottom:0}
+.ppg-i-stage:not(:last-child):before{content:"";position:absolute;left:13px;top:28px;bottom:0;width:2px;background:#e1e9dd}
+.ppg-i-stage-icon{position:relative;z-index:1;display:grid;place-items:center;width:28px;height:28px;border:1px solid #e0e7dc;border-radius:50%;background:#f2f6ef;color:#849184}
+.ppg-i-stage-icon svg{width:14px;height:14px}
+.ppg-i-stage.completed .ppg-i-stage-icon{background:#248354;border-color:#248354;color:white}
+.ppg-i-stage.active .ppg-i-stage-icon{background:#fff6da;border:2px solid #d2a541;color:#9a7317}
+.ppg-i-stage strong{display:block;margin-top:3px;color:#36503e;font-size:10px;line-height:1.5}
+.ppg-i-stage.completed strong{color:#286745}
+.ppg-i-stage p{margin:4px 0 0;color:#839087;font-size:9px;line-height:1.6}
+.ppg-i-stage time{display:block;margin-top:4px;color:#929b92;font-size:8px}
+.ppg-i-stage-state{padding:5px 6px;border-radius:5px;background:#eef1ed;color:#748176;font-size:8px;font-weight:950;white-space:nowrap}
+.ppg-i-stage.active .ppg-i-stage-state{background:#fff0bb;color:#80601b}
+.ppg-i-eta{margin-top:16px;padding:15px;border:1px solid #e4eddd;border-radius:10px;background:#f2f7ed}
+.ppg-i-eta-label{color:#71846f;font-size:9px;font-weight:950;letter-spacing:.7px}
+.ppg-i-eta strong{display:block;margin-top:8px;color:#20553b;font-size:22px;font-weight:950}
+.ppg-i-eta p{margin:6px 0 0;color:#849082;font-size:9px;line-height:1.6}
+.ppg-i-journey{display:flex;align-items:flex-start;gap:0;overflow-x:auto;padding:7px 0 2px}
+.ppg-i-journey-step{position:relative;flex:1;min-width:100px;padding:0 6px;text-align:center}
+.ppg-i-journey-step:not(:last-child):after{content:"";position:absolute;top:14px;left:calc(50% + 17px);right:calc(-50% + 17px);height:2px;background:#dfe7db}
+.ppg-i-journey-node{position:relative;z-index:1;display:grid;place-items:center;width:29px;height:29px;margin:0 auto 8px;border-radius:50%;background:#e9eee6;color:#718076;font-size:10px;font-weight:950}
+.ppg-i-journey-step.completed .ppg-i-journey-node{background:#2b8b58;color:white}
+.ppg-i-journey-step.active .ppg-i-journey-node{background:#d8f28a;color:#30481f}
+.ppg-i-journey-step strong{display:block;color:#3a5141;font-size:9px;line-height:1.5}
+.ppg-i-journey-step p{margin:4px 0 7px;color:#849087;font-size:8px;line-height:1.5}
+.ppg-i-journey-step span{display:inline-block;padding:4px 5px;border-radius:5px;background:#edf1e9;color:#667866;font-size:7px;font-weight:950;white-space:nowrap}
+.ppg-i-journey-step.completed span{background:#dff0d6;color:#2b7044}
+.ppg-i-journey-step.active span{background:#e9f4b7;color:#4b632b}
+.ppg-i-items{display:flex;flex-direction:column;gap:7px}
+.ppg-i-item{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:10px;padding:8px;border:1px solid #e9eee5;border-radius:9px}
+.ppg-i-item-img,.ppg-i-item-fallback{width:52px;height:49px;object-fit:cover;border-radius:7px;background:#edf3e8}
+.ppg-i-item-fallback{display:grid;place-items:center;color:#52754f;font-size:10px;font-weight:950}
+.ppg-i-item strong{display:block;color:#344f3e;font-size:10px;line-height:1.5;overflow-wrap:anywhere}
+.ppg-i-item small{display:block;margin-top:3px;color:#8a958b;font-size:8px;line-height:1.5;overflow-wrap:anywhere}
+.ppg-i-item-qty{color:#4d694f;font-size:8px;line-height:1.6;text-align:right;white-space:nowrap}
+.ppg-i-pay-status{display:inline-block;margin-bottom:11px;padding:6px 8px;border-radius:6px;background:#edf4e3;color:#4d7146;font-size:9px;font-weight:950}
+.ppg-i-pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ppg-i-money{padding:12px;border:1px solid #e7eee3;border-radius:9px;background:#fafcf9;min-width:0}
+.ppg-i-money span{display:block;color:#849087;font-size:9px}
+.ppg-i-money strong{display:block;margin-top:7px;color:#304b3a;font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+.ppg-i-money .paid{color:#27744b}
+.ppg-i-money.due{background:#fff8e9;border-color:#f2e2c4}
+.ppg-i-money.due strong{color:#995e18}
+.ppg-i-disclaimer{margin:10px 0 0;color:#879287;font-size:8px;line-height:1.6}
+.ppg-i-support{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:15px;border:1px solid #dfe9d8;border-radius:11px;background:#eaf3e4}
+.ppg-i-support strong{display:block;color:#34533d;font-size:11px}
+.ppg-i-support p{margin:5px 0 0;color:#7c897d;font-size:9px;line-height:1.6}
+.ppg-i-support a{flex-shrink:0;padding:10px 12px;border-radius:7px;background:#174a37;color:white!important;text-decoration:none!important;font-size:9px;font-weight:950;white-space:nowrap}
+.ppg-i-footer{background:#0c3429;color:#d5e4d9;padding:19px 0;margin-top:20px}
+.ppg-i-footer-inner{display:flex;align-items:center;justify-content:space-between;gap:18px}
+.ppg-i-footer-brand{font-size:10px;font-weight:950;letter-spacing:.5px}
+.ppg-i-footer-brand small{display:block;margin-top:4px;color:#91b39b;font-size:7px;letter-spacing:1.2px}
+.ppg-i-footer-links{display:flex;align-items:center;flex-wrap:wrap;gap:17px;color:#d7e5db;font-size:9px}
+.ppg-i-footer-links a{color:#d8f28a!important;text-decoration:none}
+.ppg-i-message{padding:28px;border:1px solid var(--line);border-radius:13px;background:white;text-align:center;color:#78867b}
+.ppg-i-message h2{margin:0 0 8px;color:#274934;font-size:19px}
+.ppg-i-message p{font-size:11px;line-height:1.7}
+.ppg-i-message a{display:inline-block;margin-top:8px;padding:10px 13px;border-radius:7px;background:var(--lime);color:#2b432e;text-decoration:none;font-size:10px;font-weight:950}
+@media(max-width:1280px){
+ .ppg-i-order-strip{grid-template-columns:minmax(230px,1.45fr) repeat(3,minmax(125px,1fr));row-gap:8px}
+ .ppg-i-product{grid-column:1/-1;border-bottom:1px solid #edf0eb;padding-bottom:12px}
+ .ppg-i-metric{border-left:0}
+ .ppg-i-main-grid{grid-template-columns:minmax(0,1.2fr) minmax(320px,.9fr)}
+ .ppg-i-container{padding-left:22px;padding-right:22px}
+}
+@media(max-width:900px){
+ .ppg-i-main-grid{grid-template-columns:1fr}
+ .ppg-i-order-strip{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .ppg-i-production{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}
+}
+@media(max-width:600px){
+ .ppg-i-container{padding-left:12px;padding-right:12px}
+ .ppg-i-header{height:auto;min-height:58px}
+ .ppg-i-header-inner{gap:10px}
+ .ppg-i-brand{min-width:0;flex:1}
+ .ppg-i-brand strong{font-size:10px}
+ .ppg-i-brand small{font-size:7px;letter-spacing:.8px}
+ .ppg-i-nav,.ppg-i-help{display:none}
+ .ppg-i-header-right{gap:5px}
+ .ppg-i-contact{padding:9px;font-size:9px}
+ .ppg-i-cover-inner{grid-template-columns:1fr;gap:17px;padding-top:24px;padding-bottom:20px}
+ .ppg-i-cover h1{font-size:31px}
+ .ppg-i-token{max-width:none;padding:12px}
+ .ppg-i-order-strip{grid-template-columns:1fr 1fr;padding:10px}
+ .ppg-i-product{grid-column:1/-1}
+ .ppg-i-metric{padding:6px 0}
+ .ppg-i-metric-icon{display:none}
+ .ppg-i-metric strong{font-size:10px}
+ .ppg-i-stats{grid-template-columns:1fr;gap:7px}
+ .ppg-i-stat{padding:12px}
+ .ppg-i-stat strong{font-size:14px}
+ .ppg-i-main-grid{gap:10px;margin-top:10px}
+ .ppg-i-panel{padding:12px}
+ .ppg-i-panel-head{gap:7px}
+ .ppg-i-panel-head h2{font-size:11px}
+ .ppg-i-head-right{font-size:8px}
+ .ppg-i-production{grid-template-columns:1fr}
+ .ppg-i-job-photo{height:auto;max-height:280px}
+ .ppg-i-photo-placeholder{height:180px}
+ .ppg-i-operation-name{font-size:22px}
+ .ppg-i-machines{grid-template-columns:1fr 1fr}
+ .ppg-i-stage{grid-template-columns:28px minmax(0,1fr) auto;gap:7px}
+ .ppg-i-stage-state{font-size:7px;padding:4px}
+ .ppg-i-pay-grid{gap:6px}
+ .ppg-i-money{padding:9px}
+ .ppg-i-money strong{font-size:12px}
+ .ppg-i-support{align-items:flex-start;flex-direction:column}
+ .ppg-i-footer-inner{align-items:flex-start;flex-direction:column}
+ .ppg-i-footer-links{gap:10px}
+ .ppg-i-journey-step{min-width:98px}
+}
+
+/* PPG_REFERENCE_VISUAL_V2 */
+
+/* Page background and true full-width canvas */
+body:has(.ppg-industrial-track) {
+    background: #f2f6ef !important;
+    overflow-x: hidden;
+}
+body:has(.ppg-industrial-track) .page-content,
+body:has(.ppg-industrial-track) .page-content-wrapper,
+body:has(.ppg-industrial-track) .web-page-content,
+body:has(.ppg-industrial-track) .main-section {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+.ppg-industrial-track {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    left: calc(50% - 50vw) !important;
+    margin: 0 !important;
+    background:
+      radial-gradient(ellipse at 15% 30%, #ffffff 0%, #f2f6ef 57%, #eaf1e6 100%) !important;
+}
+.ppg-i-container {
+    width: 92% !important;
+    max-width: 1580px !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* Branded white header, full width */
+.ppg-i-header {
+    height: 56px !important;
+    background: #ffffff !important;
+    border-bottom: 1px solid #e2e9df !important;
+}
+.ppg-i-header-inner {
+    width: 90% !important;
+    max-width: 1580px !important;
+    padding: 0 !important;
+    gap: 28px !important;
+}
+.ppg-i-logo {
+    width: 40px !important;
+    height: 40px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+}
+.ppg-i-logo svg {
+    display: block;
+    width: 40px;
+    height: 40px;
+}
+.ppg-i-brand {
+    min-width: 275px !important;
+}
+.ppg-i-brand strong {
+    font-size: 14px !important;
+    letter-spacing: .35px !important;
+}
+.ppg-i-brand small {
+    letter-spacing: 1.45px !important;
+}
+.ppg-i-nav {
+    font-size: 10px !important;
+    height: 36px !important;
+}
+
+/* Cabinet photograph fills the entire hero banner */
+.ppg-i-cover {
+    min-height: 175px !important;
+    background-color: #103c30 !important;
+    background-image:
+      linear-gradient(90deg,
+        rgba(7,43,33,.98) 0%,
+        rgba(8,49,37,.95) 34%,
+        rgba(8,48,36,.70) 57%,
+        rgba(8,44,33,.34) 100%),
+      url("https://www.lwe-engineering.com/wp-content/uploads/2021/02/about_lwe_5.jpg") !important;
+    background-size: cover !important;
+    background-position: center 53% !important;
+}
+.ppg-i-cover-inner {
+    width: 92% !important;
+    max-width: 1580px !important;
+    min-height: 175px !important;
+    padding: 22px 24px !important;
+    grid-template-columns: minmax(0,1fr) 290px !important;
+    gap: 28px !important;
+}
+.ppg-i-cover h1 {
+    font-size: clamp(32px, 3.2vw, 46px) !important;
+    letter-spacing: -1.25px !important;
+    margin: 10px 0 8px !important;
+}
+.ppg-i-cover p {
+    max-width: 680px !important;
+    font-size: 12px !important;
+}
+.ppg-i-token {
+    background: rgba(12,58,43,.93) !important;
+    border-color: rgba(220,241,211,.42) !important;
+    border-radius: 14px !important;
+}
+
+/* The order summary overlaps the bottom edge of the hero */
+.ppg-i-order-strip {
+    position: relative !important;
+    z-index: 5 !important;
+    margin-top: -20px !important;
+    border-radius: 14px !important;
+    padding: 15px 16px !important;
+    box-shadow: 0 10px 28px rgba(24,57,35,.09) !important;
+    background: #fff !important;
+}
+.ppg-i-stats {
+    display: none !important;
+}
+.ppg-i-main-grid {
+    margin-top: 14px !important;
+    grid-template-columns: minmax(0,1.45fr) minmax(345px,.94fr) !important;
+    gap: 14px !important;
+}
+.ppg-i-panel {
+    background: #fff !important;
+    border: 1px solid #e2eade !important;
+    border-radius: 13px !important;
+    box-shadow: 0 3px 12px rgba(37,66,41,.025) !important;
+}
+
+/* Production image: Job Card image takes precedence.
+   If not yet uploaded, show an explicitly illustrative laser-cutting photo. */
+.ppg-i-photo-placeholder {
+    height: 235px !important;
+    min-height: 235px !important;
+    align-items: flex-start !important;
+    justify-content: flex-end !important;
+    text-align: left !important;
+    padding: 17px !important;
+    color: #fff !important;
+    border: 0 !important;
+    background:
+      linear-gradient(0deg, rgba(4,33,24,.9) 0%, rgba(4,33,24,.12) 65%, rgba(4,33,24,0) 100%),
+      url("https://static.wixstatic.com/media/cb1e80_f9bd5ab8311149f88805ebff55380d4e~mv2.png/v1/fill/w_1000%2Ch_563%2Cal_c%2Cq_90%2Cusm_0.66_1.00_0.01/cb1e80_f9bd5ab8311149f88805ebff55380d4e~mv2.png")
+      center / cover no-repeat !important;
+}
+.ppg-i-photo-tag {
+    background: #d8f28a !important;
+    color: #28482d !important;
+}
+.ppg-i-job-photo {
+    height: 235px !important;
+    object-fit: cover !important;
+}
+
+/* Full-width dark-green footer matching the reference */
+.ppg-i-footer {
+    width: 100% !important;
+    margin: 22px 0 0 !important;
+    padding: 18px 0 !important;
+    min-height: 82px !important;
+    background:
+      linear-gradient(110deg, #092f25 0%, #103c30 60%, #164b38 100%) !important;
+    border-top: 1px solid #285b43 !important;
+    color: #d5e4d9 !important;
+}
+.ppg-i-footer-inner {
+    width: 92% !important;
+    max-width: 1580px !important;
+    padding: 0 !important;
+}
+.ppg-i-footer-brand {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    color: #fff !important;
+    font-size: 10px !important;
+    letter-spacing: .5px !important;
+}
+.ppg-i-footer-logo,
+.ppg-i-footer-logo svg {
+    display: block;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+}
+.ppg-i-footer-brand small {
+    color: #9ebba6 !important;
+}
+.ppg-i-footer-links {
+    color: #e1ebe4 !important;
+}
+.ppg-i-footer-links a {
+    color: #d8f28a !important;
+}
+@media(max-width:900px) {
+    .ppg-i-container,
+    .ppg-i-cover-inner,
+    .ppg-i-footer-inner {
+        width: 94% !important;
+    }
+    .ppg-i-main-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+@media(max-width:600px) {
+    .ppg-i-container,
+    .ppg-i-cover-inner,
+    .ppg-i-footer-inner {
+        width: 100% !important;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+    .ppg-i-header-inner {
+        gap: 10px !important;
+    }
+    .ppg-i-brand {
+        min-width: 0 !important;
+    }
+    .ppg-i-cover-inner {
+        grid-template-columns: 1fr !important;
+        padding-top: 24px !important;
+        padding-bottom: 28px !important;
+    }
+    .ppg-i-cover h1 {
+        font-size: 31px !important;
+    }
+    .ppg-i-token {
+        max-width: none !important;
+    }
+    .ppg-i-order-strip {
+        margin-top: -14px !important;
+    }
+    .ppg-i-production {
+        grid-template-columns: 1fr !important;
+    }
+    .ppg-i-job-photo,
+    .ppg-i-photo-placeholder {
+        height: 210px !important;
+        min-height: 210px !important;
+    }
+}
+
+
+/* PPG_VISUAL_CORRECTION_V3 */
+
+/* Match the reference image's proportions */
+.ppg-industrial-track {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    left: calc(50% - 50vw) !important;
+    margin: 0 !important;
+    background: #f3f6f0 !important;
+}
+
+.ppg-i-container.ppg-i-content {
+    width: calc(100vw - 116px) !important;
+    max-width: 1550px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding: 0 !important;
+}
+
+.ppg-i-header-inner,
+.ppg-i-footer-inner {
+    width: calc(100vw - 150px) !important;
+    max-width: 1500px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding: 0 !important;
+}
+
+.ppg-i-cover-inner {
+    width: calc(100vw - 164px) !important;
+    max-width: 1500px !important;
+    min-height: 175px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding: 22px 0 !important;
+    grid-template-columns: minmax(0, 1fr) 290px !important;
+}
+
+/* Use a verified industrial-panel image source, with a second image fallback */
+.ppg-i-cover {
+    min-height: 175px !important;
+    background-color: #103c30 !important;
+    background-image:
+        linear-gradient(
+            90deg,
+            rgba(7,43,33,.98) 0%,
+            rgba(8,49,37,.94) 35%,
+            rgba(8,48,36,.69) 62%,
+            rgba(8,44,33,.40) 100%
+        ),
+        url("https://static.wixstatic.com/media/25a63e_ea51857658e749f9bc406c23a561801c~mv2.jpg/v1/fill/w_1920%2Ch_620%2Cal_c%2Cq_85/25a63e_ea51857658e749f9bc406c23a561801c~mv2.jpg"),
+        url("https://static.wixstatic.com/media/25a63e_ea51857658e749f9bc406c23a561801c~mv2.jpg/v1/fill/w_612%2Ch_459%2Cal_c/25a63e_ea51857658e749f9bc406c23a561801c~mv2.jpg") !important;
+    background-size: cover, cover, cover !important;
+    background-position: center, center 48%, center !important;
+    background-repeat: no-repeat !important;
+}
+
+/* Summary panel overlaps the bottom of the hero, like the reference */
+.ppg-i-order-strip {
+    width: calc(100vw - 116px) !important;
+    max-width: 1550px !important;
+    margin: -20px auto 0 !important;
+    position: relative !important;
+    z-index: 5 !important;
+    border-radius: 14px !important;
+    background: #fff !important;
+    box-shadow: 0 10px 28px rgba(24,57,35,.09) !important;
+}
+
+/* Three separate KPI cards are not part of the supplied mockup */
+.ppg-i-stats {
+    display: none !important;
+}
+
+/* Match the mockup's main left/right dashboard proportions */
+.ppg-i-main-grid {
+    width: calc(100vw - 116px) !important;
+    max-width: 1550px !important;
+    margin: 14px auto 0 !important;
+    grid-template-columns: minmax(0, 1.55fr) minmax(360px, .95fr) !important;
+    gap: 14px !important;
+    align-items: start !important;
+}
+
+.ppg-i-panel {
+    border: 1px solid #e2eade !important;
+    border-radius: 13px !important;
+    background: #fff !important;
+    box-shadow: 0 3px 12px rgba(37,66,41,.025) !important;
+}
+
+/* A more relevant illustrative production image until a Job Card photo exists */
+.ppg-i-photo-placeholder {
+    height: 235px !important;
+    min-height: 235px !important;
+    align-items: flex-start !important;
+    justify-content: flex-end !important;
+    text-align: left !important;
+    padding: 17px !important;
+    color: #fff !important;
+    border: 0 !important;
+    background-image:
+        linear-gradient(0deg, rgba(4,33,24,.90), rgba(4,33,24,.04) 75%),
+        url("https://www.bystronic.com/sites/default/files/styles/l/public/2024-11/SSC%20V3_01.jpg?itok=Ez_HbKmh"),
+        url("https://static.wixstatic.com/media/cb1e80_f9bd5ab8311149f88805ebff55380d4e~mv2.png/v1/fill/w_1000%2Ch_563%2Cal_c%2Cq_90%2Cusm_0.66_1.00_0.01/cb1e80_f9bd5ab8311149f88805ebff55380d4e~mv2.png") !important;
+    background-size: cover, cover, cover !important;
+    background-position: center, center, center !important;
+    background-repeat: no-repeat !important;
+}
+
+.ppg-i-job-photo {
+    width: 100% !important;
+    height: 235px !important;
+    object-fit: cover !important;
+    border-radius: 9px !important;
+}
+
+/* Ensure the custom dark-green footer is visible */
+body:has(.ppg-industrial-track) .ppg-i-footer {
+    display: block !important;
+    width: 100% !important;
+    margin: 20px 0 0 !important;
+    padding: 18px 0 !important;
+    min-height: 82px !important;
+    background: linear-gradient(110deg,#092f25,#103c30 60%,#164b38) !important;
+    color: #d5e4d9 !important;
+}
+
+.ppg-i-footer-inner {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 18px !important;
+}
+
+.ppg-i-footer-brand {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    color: #fff !important;
+}
+
+.ppg-i-footer-logo,
+.ppg-i-footer-logo svg {
+    width: 36px !important;
+    height: 36px !important;
+    flex: 0 0 36px !important;
+}
+
+.ppg-i-footer-brand small {
+    color: #9ebba6 !important;
+}
+
+.ppg-i-footer-links a {
+    color: #d8f28a !important;
+}
+
+/* Product thumbnails: use an explicitly representative image if Item has none */
+.ppg-i-product-img,
+.ppg-i-product-fallback {
+    width: 66px !important;
+    height: 60px !important;
+    flex: 0 0 66px !important;
+    object-fit: cover !important;
+    border-radius: 8px !important;
+}
+
+.ppg-i-item-img,
+.ppg-i-item-fallback {
+    width: 52px !important;
+    height: 49px !important;
+    object-fit: cover !important;
+    border-radius: 7px !important;
+}
+
+@media (max-width: 900px) {
+    .ppg-i-container.ppg-i-content,
+    .ppg-i-order-strip,
+    .ppg-i-main-grid {
+        width: calc(100vw - 36px) !important;
+    }
+
+    .ppg-i-header-inner,
+    .ppg-i-footer-inner {
+        width: calc(100vw - 36px) !important;
+    }
+
+    .ppg-i-cover-inner {
+        width: calc(100vw - 44px) !important;
+        grid-template-columns: minmax(0, 1fr) 250px !important;
+    }
+
+    .ppg-i-main-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .ppg-i-container.ppg-i-content,
+    .ppg-i-order-strip,
+    .ppg-i-main-grid,
+    .ppg-i-header-inner,
+    .ppg-i-footer-inner,
+    .ppg-i-cover-inner {
+        width: calc(100vw - 24px) !important;
+    }
+
+    .ppg-i-cover-inner {
+        grid-template-columns: 1fr !important;
+    }
+
+    .ppg-i-cover h1 {
+        font-size: 31px !important;
+    }
+
+    .ppg-i-production {
+        grid-template-columns: 1fr !important;
+    }
+
+    .ppg-i-footer-inner {
+        align-items: flex-start !important;
+        flex-direction: column !important;
+    }
+}
+
+</style>
+
+<div class="ppg-industrial-track">
+ <header class="ppg-i-header">
+  <div class="ppg-i-container ppg-i-header-inner">
+   <div class="ppg-i-brand">
+    <div class="ppg-i-logo" aria-label="Power Partner logo">
+      <svg viewBox="0 0 40 40" role="img" aria-hidden="true">
+       <circle cx="20" cy="20" r="17" fill="#f1f7e9" stroke="#4d965e" stroke-width="2"/>
+       <circle cx="20" cy="20" r="11" fill="none" stroke="#7bb65f" stroke-width="2"/>
+       <path d="M20 5l3.5 8 8-3-3 8 7.5 4-8 3 1 8-7-5-7 5 1-8-8-3 7.5-4-3-8 8 3z"
+         fill="#3e8650" stroke="#2b6a42" stroke-width=".7"/>
+       <circle cx="20" cy="20" r="4.4" fill="#e3f1a6" stroke="#277044" stroke-width="1.4"/>
+      </svg>
+     </div>
+    <div><strong>POWER PARTNER GLOBAL</strong><small>ENGINEERING A BETTER TOMORROW</small></div>
+   </div>
+   <div class="ppg-i-nav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h6l4 4h8v10H3zM9 5v14M13 9v10"/></svg>ORDER TRACKING</div>
+   <div class="ppg-i-header-right">
+    <div class="ppg-i-help-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 14v-3a8 8 0 0 1 16 0v3M4 14H2v-3h2M20 14h2v-3h-2M4 14v4h4v-4zM20 14v4h-4v-4zM16 20h-4"/></svg></div>
+    <div class="ppg-i-help"><strong>Need help?</strong>Contact Power Partner</div>
+    <a class="ppg-i-contact" href="mailto:powerpartnerhq@gmail.com">Contact Support</a>
+   </div>
+  </div>
+ </header>
+
+ <section class="ppg-i-cover">
+  <div class="ppg-i-container ppg-i-cover-inner">
+   <div>
+    <div class="ppg-i-kicker">POWER PARTNER GLOBAL &nbsp;·&nbsp; CUSTOMER ORDER TRACKING</div>
+    <h1>Your order, clearly <span>in progress.</span></h1>
+    <p>From design to delivery and installation — track the journey of your industrial solution with the latest information available in ERP.</p>
+   </div>
+   <div class="ppg-i-token">
+    <label>TRACKING ID</label>
+    <div class="ppg-i-token-row"><strong id="ppg-i-token"></strong><button id="ppg-i-copy" class="ppg-i-copy" type="button">Copy ID</button></div>
+    <div class="ppg-i-token-note">Keep this ID handy for all order enquiries.</div>
+   </div>
+  </div>
+ </section>
+
+ <div class="ppg-i-container ppg-i-content">
+  <div id="ppg-i-loading" class="ppg-i-message"><h2>Preparing your order report</h2><p>Retrieving your latest available order, production and delivery updates.</p></div>
+  <div id="ppg-i-error" class="ppg-i-message" style="display:none"><h2>We couldn't find this order</h2><p id="ppg-i-error-text">Check your Tracking ID and try again.</p><a href="/track-order">Back to tracking search</a></div>
+
+  <div id="ppg-i-report" style="display:none">
+   <section class="ppg-i-order-strip">
+    <div class="ppg-i-product"><div id="ppg-i-product-image"></div><div style="min-width:0"><span class="ppg-i-label">YOUR ORDER</span><strong class="ppg-i-product-name" id="ppg-i-product-name">Order items</strong><span class="ppg-i-product-code" id="ppg-i-product-code">Product summary</span></div></div>
+    <div class="ppg-i-metric"><div class="ppg-i-metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg></div><div><label>Customer order</label><strong id="ppg-i-order-ref">—</strong></div></div>
+    <div class="ppg-i-metric"><div class="ppg-i-metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg></div><div><label>Order date</label><strong id="ppg-i-order-date">—</strong></div></div>
+    <div class="ppg-i-metric"><div class="ppg-i-metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h11v11H3zM14 11h4l3 3v4h-7z"/></svg></div><div><label>Expected delivery</label><strong id="ppg-i-delivery-date">—</strong></div></div>
+    <div class="ppg-i-metric"><div class="ppg-i-metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 20 7v10l-8 4-8-4V7zM9 12h6"/></svg></div><div><label>Current status</label><strong><span id="ppg-i-status" class="ppg-i-status-badge">—</span></strong></div></div>
+    <div class="ppg-i-metric"><div class="ppg-i-metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 4 16 4 16 0V5M4 11v6c0 4 16 4 16 0v-6"/></svg></div><div><label>Order value</label><strong id="ppg-i-order-value">—</strong></div></div>
+   </section>
+
+   <section class="ppg-i-stats">
+    <div class="ppg-i-stat"><label>DELIVERY PROGRESS</label><strong id="ppg-i-delivery-progress">0%</strong><small>Quantity delivered against the order</small></div>
+    <div class="ppg-i-stat"><label>CURRENT PRODUCTION STAGE</label><strong id="ppg-i-current-stage">Awaiting production planning</strong><small id="ppg-i-stage-hint">Based on linked work orders</small></div>
+    <div class="ppg-i-stat"><label>ESTIMATED DELIVERY</label><strong id="ppg-i-eta-stat">Not scheduled</strong><small>Based on the current ERP schedule</small></div>
+   </section>
+
+   <div class="ppg-i-main-grid">
+    <div class="ppg-i-col">
+     <section class="ppg-i-panel">
+      <div class="ppg-i-panel-head"><div class="ppg-i-panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V9l7-6 7 6v12M9 21v-7h6v7"/></svg></div><div><h2>LIVE PRODUCTION</h2><p>Current operation, workstation and latest production photo</p></div><div class="ppg-i-head-right"><span class="ppg-i-live-dot"></span>ERP linked</div></div>
+      <div class="ppg-i-production">
+       <div><div id="ppg-i-photo-wrap"></div><div class="ppg-i-photo-caption" id="ppg-i-photo-caption"></div></div>
+       <div>
+        <div class="ppg-i-op-label">CURRENT OPERATION</div><h2 id="ppg-i-operation" class="ppg-i-operation-name">Awaiting production planning</h2>
+        <span id="ppg-i-prod-status" class="ppg-i-chip">Not Started</span>
+        <div class="ppg-i-machines">
+         <div class="ppg-i-machine"><div class="ppg-i-machine-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 21h18M5 21V8h14v13M8 8V4h8v4M8 12h3M8 16h3M15 12h1M15 16h1"/></svg></div><div><small>WORKSTATION</small><strong id="ppg-i-workstation">Not assigned</strong></div></div>
+         <div class="ppg-i-machine"><div class="ppg-i-machine-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></div><div><small>PRODUCTION QTY</small><strong id="ppg-i-qty">0 / 0 units</strong></div></div>
+        </div>
+        <div class="ppg-i-progress-head"><span>Current operation progress</span><strong id="ppg-i-prod-progress">0%</strong></div>
+        <div class="ppg-i-progress"><div id="ppg-i-prod-fill" class="ppg-i-progress-fill" style="width:0%"></div></div>
+       </div>
+      </div>
+      <hr class="ppg-i-divider"><div class="ppg-i-section-label">WORK ORDER OPERATIONS</div><div id="ppg-i-operations" class="ppg-i-operations"></div>
+     </section>
+
+     <section class="ppg-i-panel">
+      <div class="ppg-i-panel-head"><div class="ppg-i-panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 4 7v5c0 5 3 7 8 9 5-2 8-4 8-9V7zM8 12l3 3 5-6"/></svg></div><div><h2>YOUR PRODUCTION JOURNEY</h2><p>Manufacturing operations connected to this order</p></div></div>
+      <div id="ppg-i-journey" class="ppg-i-journey"></div>
+     </section>
+
+     <section class="ppg-i-panel">
+      <div class="ppg-i-panel-head"><div class="ppg-i-panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16l-1 13H5L4 7ZM9 7a3 3 0 0 1 6 0"/></svg></div><div><h2>ORDER ITEMS</h2><p>Products, quantities and delivered serial references where available</p></div></div>
+      <div id="ppg-i-items" class="ppg-i-items"></div>
+     </section>
+    </div>
+
+    <div class="ppg-i-col">
+     <section class="ppg-i-panel">
+      <div class="ppg-i-panel-head"><div class="ppg-i-panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h11v11H3zM14 11h4l3 3v4h-7zM7 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18 21a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/></svg></div><div><h2>DELIVERY & INSTALLATION</h2><p>Track the next steps until your order is handed over</p></div></div>
+      <div id="ppg-i-timeline" class="ppg-i-timeline"></div>
+      <div class="ppg-i-eta"><div class="ppg-i-eta-label">ESTIMATED DELIVERY DATE</div><strong id="ppg-i-eta">Not scheduled</strong><p>Based on the delivery date currently recorded in ERP.</p></div>
+     </section>
+
+     <section class="ppg-i-panel">
+      <div class="ppg-i-panel-head"><div class="ppg-i-panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg></div><div><h2>PAYMENT SUMMARY</h2><p>Payment status for this order · Not a tax invoice</p></div></div>
+      <div id="ppg-i-pay-status" class="ppg-i-pay-status">Loading</div>
+      <div class="ppg-i-pay-grid">
+       <div class="ppg-i-money"><span>Order total</span><strong id="ppg-i-money-total">—</strong></div>
+       <div class="ppg-i-money"><span>Invoiced amount</span><strong id="ppg-i-money-invoiced">—</strong></div>
+       <div class="ppg-i-money"><span>Paid amount</span><strong id="ppg-i-money-paid" class="paid">—</strong></div>
+       <div class="ppg-i-money due"><span>Balance due</span><strong id="ppg-i-money-due">—</strong></div>
+      </div>
+      <p class="ppg-i-disclaimer">Customer summary only. Contact our team for invoice copies, receipts or account reconciliation.</p>
+     </section>
+
+     <section class="ppg-i-support"><div><strong>Need a hand with your order?</strong><p>Share your Tracking ID with our support team for faster assistance.</p></div><a href="mailto:powerpartnerhq@gmail.com">CONTACT SUPPORT&nbsp; →</a></section>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <footer class="ppg-i-footer"><div class="ppg-i-container ppg-i-footer-inner"><div class="ppg-i-footer-brand">
+      <span class="ppg-i-footer-logo">
+       <svg viewBox="0 0 40 40" aria-hidden="true">
+        <circle cx="20" cy="20" r="17" fill="#eaf4dc" stroke="#72ad5c" stroke-width="2"/>
+        <path d="M20 5l3.5 8 8-3-3 8 7.5 4-8 3 1 8-7-5-7 5 1-8-8-3 7.5-4-3-8 8 3z" fill="#3e8650"/>
+        <circle cx="20" cy="20" r="4.4" fill="#d8f28a" stroke="#276b43" stroke-width="1.4"/>
+       </svg>
+      </span>
+      <span>POWER PARTNER GLOBAL PVT. LTD.<small>ENGINEERING A BETTER TOMORROW</small></span>
+     </div><div class="ppg-i-footer-links"><a href="/track-order">Order Tracking</a><span>Support</span><span>India</span></div></div></footer>
+</div>
+
+<script>
+(function(){
+ const token=(new URLSearchParams(location.search).get("tracking_id")||"").trim().toUpperCase();
+ const $=id=>document.getElementById(id);
+ const loading=$("ppg-i-loading"),error=$("ppg-i-error"),report=$("ppg-i-report");
+ function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+ function date(v){if(!v)return "Not scheduled";const d=new Date(String(v).slice(0,10)+"T12:00:00");return isNaN(d)?String(v):d.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});}
+ function money(v,c){try{return new Intl.NumberFormat("en-IN",{style:"currency",currency:c||"INR",maximumFractionDigits:2}).format(Number(v)||0)}catch(e){return(c||"INR")+" "+(Number(v)||0).toFixed(2)}}
+ function icon(st){if(st==="completed")return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 4 4L19 6"/></svg>';if(st==="active")return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>';return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/></svg>'}
+ function fail(msg){loading.style.display="none";report.style.display="none";error.style.display="block";$("ppg-i-error-text").textContent=msg||"Check your Tracking ID and try again."}
+ function render(d){
+  const p=d.production||{},pay=d.payment||{},items=d.items||[],stages=d.stages||[],ops=p.operations||[];
+  const delivered=Math.min(100,Math.max(0,Number(d.delivery_percent)||0));
+  const progress=Math.min(100,Math.max(0,Number(p.progress_percent)||0));
+  loading.style.display="none";error.style.display="none";report.style.display="block";
+  $("ppg-i-token").textContent=token;
+  $("ppg-i-order-ref").textContent=d.order_reference||"Order linked";
+  $("ppg-i-order-date").textContent=date(d.order_date);
+  $("ppg-i-delivery-date").textContent=date(d.estimated_delivery_date);
+  $("ppg-i-eta").textContent=date(d.estimated_delivery_date);
+  $("ppg-i-eta-stat").textContent=date(d.estimated_delivery_date);
+  $("ppg-i-status").textContent=d.overall_status||"Order confirmed";
+  $("ppg-i-delivery-progress").textContent=delivered.toFixed(0)+"%";
+  $("ppg-i-current-stage").textContent=p.stage||"Awaiting production planning";
+  $("ppg-i-stage-hint").textContent=p.workstation||"Workstation not assigned";
+  $("ppg-i-order-value").textContent=money(pay.order_total,pay.currency);
+  $("ppg-i-product-name").textContent=items.length?items[0].item:"Order items";
+  $("ppg-i-product-code").textContent=items.length?(items[0].item_code||"Product details"):"Products linked to this order";
+  $("ppg-i-product-image").innerHTML=items.length&&items[0].image&&String(items[0].image).startsWith("/files/")
+   ?'<img class="ppg-i-product-img" src="'+esc(items[0].image)+'" alt="'+esc(items[0].item||"Product")+'">'
+   :'<img class="ppg-i-product-img" src="https://static.wixstatic.com/media/25a63e_ea51857658e749f9bc406c23a561801c~mv2.jpg/v1/fill/w_612%2Ch_459%2Cal_c/25a63e_ea51857658e749f9bc406c23a561801c~mv2.jpg" alt="Representative industrial panel image" title="Representative image; replace with the Item image when available">';
+  $("ppg-i-operation").textContent=p.stage||"Awaiting production planning";
+  $("ppg-i-prod-status").textContent=p.status||"Not Started";
+  $("ppg-i-workstation").textContent=p.workstation||"Not assigned yet";
+  $("ppg-i-qty").textContent=String(p.completed_qty||0)+" / "+String(p.stage_qty||0)+" units";
+  $("ppg-i-prod-progress").textContent=progress.toFixed(0)+"%";
+  $("ppg-i-prod-fill").style.width=progress+"%";
+  $("ppg-i-photo-wrap").innerHTML=p.photo_url&&String(p.photo_url).startsWith("/files/")
+   ?'<img class="ppg-i-job-photo" src="'+esc(p.photo_url)+'" alt="Customer-shareable Job Card photo">'
+   :'<div class="ppg-i-photo-placeholder"><span class="ppg-i-photo-tag">ILLUSTRATIVE FACTORY IMAGE</span><span>Live Job Card photo will replace this image when uploaded.</span></div>';
+  $("ppg-i-photo-caption").textContent=p.photo_url&&String(p.photo_url).startsWith("/files/")
+   ?"Customer-shareable photo uploaded for the current operation."
+   :"Illustrative image only — not a photograph of your specific job.";
+  $("ppg-i-operations").innerHTML=ops.length?ops.map(o=>{
+   const s=["completed","active","pending"].includes(o.state)?o.state:"pending";
+   return '<div class="ppg-i-operation-row"><span class="ppg-i-op-dot '+s+'"></span><div><strong>'+esc(o.operation||"Production operation")+'</strong><small>'+esc(o.workstation||"Workstation not assigned")+'</small></div><span class="ppg-i-op-state">'+esc(o.status||"Pending")+'</span></div>';
+  }).join(""):'<div style="color:#819087;font-size:10px;line-height:1.7;padding:8px 0">No Work Order operations are linked to this Sales Order yet. The operation list appears when production planning is created.</div>';
+  $("ppg-i-journey").innerHTML=ops.length?ops.map((o,i)=>{
+   const s=["completed","active","pending"].includes(o.state)?o.state:"pending";
+   const label=s==="completed"?"COMPLETED":s==="active"?"IN PROGRESS":String(o.status||"QUEUED").toUpperCase();
+   return '<div class="ppg-i-journey-step '+s+'"><div class="ppg-i-journey-node">'+(s==="completed"?icon(s):i+1)+'</div><strong>'+esc(o.operation||"Operation")+'</strong><p>'+esc(o.workstation||"Workstation not assigned")+'</p><span>'+esc(label)+'</span></div>';
+  }).join(""):'<div style="color:#819087;font-size:10px;line-height:1.7">Production stages will populate from the actual Work Order operations.</div>';
+  $("ppg-i-timeline").innerHTML=stages.length?stages.map(s=>{
+   const st=["completed","active","pending"].includes(s.state)?s.state:"pending";
+   return '<div class="ppg-i-stage '+st+'"><div class="ppg-i-stage-icon">'+icon(st)+'</div><div><strong>'+esc(s.label)+'</strong><p>'+esc(s.detail)+'</p>'+(s.date?'<time>'+esc(date(s.date))+'</time>':'')+'</div><span class="ppg-i-stage-state">'+(st==="completed"?"COMPLETED":st==="active"?"IN PROGRESS":"PENDING")+'</span></div>';
+  }).join(""):'<div style="color:#819087;font-size:10px">No delivery milestones recorded yet.</div>';
+  $("ppg-i-items").innerHTML=items.length?items.map(it=>{
+   const img=it.image&&String(it.image).startsWith("/files/")?'<img class="ppg-i-item-img" src="'+esc(it.image)+'" alt="'+esc(it.item||"Product")+'">':'<img class="ppg-i-item-img" src="https://static.wixstatic.com/media/25a63e_ea51857658e749f9bc406c23a561801c~mv2.jpg/v1/fill/w_612%2Ch_459%2Cal_c/25a63e_ea51857658e749f9bc406c23a561801c~mv2.jpg" alt="Representative industrial panel image" title="Representative image; replace with the Item image when available">';
+   const serial=it.serial_numbers?'<br>Serial no.: '+esc(it.serial_numbers):"";
+   return '<div class="ppg-i-item">'+img+'<div><strong>'+esc(it.item||"Product")+'</strong><small>'+esc(it.item_code||"Item reference unavailable")+serial+'</small></div><div class="ppg-i-item-qty">ORDERED<br>'+esc(it.qty)+' units<br>DELIVERED '+esc(it.delivered_qty)+'</div></div>';
+  }).join(""):'<div style="color:#819087;font-size:10px">Order item details are unavailable.</div>';
+  $("ppg-i-pay-status").textContent=pay.status||"Payment information unavailable";
+  $("ppg-i-money-total").textContent=money(pay.order_total,pay.currency);
+  $("ppg-i-money-invoiced").textContent=money(pay.invoiced_amount,pay.currency);
+  $("ppg-i-money-paid").textContent=money(pay.paid_amount,pay.currency);
+  $("ppg-i-money-due").textContent=money(pay.balance_due,pay.currency);
+ }
+ $("ppg-i-copy").addEventListener("click",function(){
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(token).then(()=>{$("ppg-i-copy").textContent="Copied";}).catch(()=>{});
+ });
+ if(!token){fail("Go back to tracking search and enter your Tracking ID.");return}
+ fetch("/api/method/ppg_dashboard.api.customer_tracking.get_order_tracking?tracking_id="+encodeURIComponent(token),{headers:{"Accept":"application/json"}})
+ .then(async r=>{const body=await r.json();if(!r.ok)throw new Error();return body.message||{}})
+ .then(d=>{if(!d.found){fail(d.message||"Tracking ID not found. Please check it and try again.");return}render(d)})
+ .catch(()=>fail("We could not load your order report. Please try again in a moment."));
+})();
+</script>
+{% endblock %}

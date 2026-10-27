@@ -1,0 +1,47 @@
+console.log("PPG Dashboard loaded cleanly");
+
+/* PPG_HR_DESK_BUTTON_V1 */
+(function () {
+    function renderPPGHRButton() {
+        if (!window.frappe || !window.jQuery) return;
+
+        const roles = (frappe.boot && frappe.boot.user && frappe.boot.user.roles) || [];
+        const isHR = roles.includes("HR Manager") || roles.includes("HR User");
+        const route = (frappe.get_route_str && frappe.get_route_str()) || "";
+        const isDeskHome = route === "" || route === "desk" || route === "desktop"
+            || route.startsWith("workspace");
+
+        $("#custom-hr-btn").remove();
+        if (!isHR || !isDeskHome) return;
+
+        const $button = $(`
+            <div id="custom-hr-btn" style="display:flex;justify-content:center;margin:20px auto;padding:10px;">
+                <button type="button" class="btn btn-primary" style="padding:10px 22px;">
+                    Open HR Dashboard
+                </button>
+            </div>
+        `);
+
+        $button.find("button").on("click", function () {
+            frappe.set_route("management-dashboard");
+        });
+
+        const $target = $(".workspace-container").first();
+        if ($target.length) {
+            $target.prepend($button);
+        } else {
+            $(".layout-main-section").first().prepend($button);
+        }
+
+        console.info("PPG HR Desk button rendered");
+    }
+
+    $(function () {
+        setTimeout(renderPPGHRButton, 1200);
+        if (window.frappe && frappe.router) {
+            frappe.router.on("change", function () {
+                setTimeout(renderPPGHRButton, 500);
+            });
+        }
+    });
+})();

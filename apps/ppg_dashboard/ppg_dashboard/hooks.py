@@ -7,6 +7,21 @@ app_license = "mit"
 
 
 doc_events = {
+    "Sales Order": {
+        "before_insert": "ppg_dashboard.api.customer_tracking.ensure_tracking_id",
+        "before_submit": "ppg_dashboard.api.customer_tracking.ensure_tracking_id",
+    },
+    "Installation Assignment": {
+        "validate": "ppg_dashboard.api.installation_assignment.validate_assignment",
+        "on_update": "ppg_dashboard.api.installation_assignment.on_assignment_update",
+    },
+    "Installation Note": {
+        "validate": "ppg_dashboard.api.signoff_otp.validate_signoff",
+        "before_submit": "ppg_dashboard.api.signoff_otp.before_submit_signoff",
+        "on_update_after_submit": "ppg_dashboard.api.signoff_otp.on_update_after_submit_signoff",
+        "on_submit": "ppg_dashboard.api.installation_assignment.on_installation_note_submit",
+        "on_cancel": "ppg_dashboard.api.installation_assignment.on_installation_note_cancel",
+    },
     "*": {
         "after_insert": "ppg_dashboard.push_notifications.handle_document_event",
         "on_update": "ppg_dashboard.push_notifications.handle_document_event",
@@ -23,11 +38,6 @@ doc_events = {
 }
 
 
-app_include_js = [
-    "https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js",
-    "https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js",
-    "/assets/ppg_dashboard/js/pwa_fcm.js"
-]
 
 scheduler_events = {
     "cron": {
@@ -36,3 +46,13 @@ scheduler_events = {
         ]
     }
 }
+
+app_include_js = ['https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js', 'https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js', '/assets/ppg_dashboard/js/pwa_fcm.js', '/assets/ppg_dashboard/js/ppg_dashboard.js', '/assets/ppg_dashboard/js/hr_btn_final.js?v=20261026role5']
+
+# Public customer order tracking page.
+website_route_rules = [{'from_route': '/track-order', 'to_route': 'track_order'}, {'from_route': '/track-order-details', 'to_route': 'track_order_details'}]
+
+# PPG: load darker status badge styles
+app_include_js = list(globals().get("app_include_js", []))
+if '/assets/ppg_dashboard/js/status_badges_dark.js?v=20261026dark2' not in app_include_js:
+    app_include_js.append('/assets/ppg_dashboard/js/status_badges_dark.js?v=20261026dark1')

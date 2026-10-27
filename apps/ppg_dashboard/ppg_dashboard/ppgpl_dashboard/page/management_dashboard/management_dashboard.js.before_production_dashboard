@@ -1,0 +1,3991 @@
+
+frappe.pages["management-dashboard"].on_page_load = function (wrapper) {
+
+    frappe.ui.make_app_page({
+        parent: wrapper,
+        title: "Management Dashboard",
+        single_column: true
+    });
+
+    render_dashboard(wrapper);
+};
+
+
+function render_dashboard(wrapper) {
+
+    if (!document.getElementById("management-dashboard-inline-css")) {
+
+        const style = document.createElement("style");
+
+        style.id = "management-dashboard-inline-css";
+
+        style.innerHTML = `
+.management-dashboard {
+    background: #f7f8fa;
+    min-height: calc(100vh - 60px);
+    padding: 22px 26px 40px;
+    color: #172033;
+}
+
+.md-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+    margin-bottom: 18px;
+}
+
+.md-title {
+    font-size: 25px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+.md-subtitle {
+    margin-top: 4px;
+    color: #7b8494;
+    font-size: 12px;
+}
+
+.md-updated {
+    color: #98a1af;
+}
+
+.md-actions {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.md-actions > div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.md-actions label {
+    font-size: 10px;
+    color: #7b8494;
+    margin: 0;
+}
+
+.md-actions input {
+    width: 145px;
+}
+
+.md-actions select {
+    width: 88px;
+}
+
+.md-refresh {
+    height: 36px;
+    padding: 0 14px;
+}
+
+.md-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 16px;
+}
+
+.md-tab {
+    border: 1px solid #d9dee7;
+    background: #fff;
+    color: #536070;
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.md-tab:hover {
+    border-color: #9ebcf4;
+}
+
+.md-tab.active {
+    background: #edf4ff;
+    color: #1758bb;
+    border-color: #8fb7fa;
+    font-weight: 600;
+}
+
+.md-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.md-kpi {
+    background: #fff;
+    border: 1px solid #e0e5ec;
+    border-radius: 10px;
+    padding: 15px 16px;
+    min-height: 104px;
+    transition: transform 0.12s ease,
+                box-shadow 0.12s ease;
+}
+
+.md-kpi.clickable-kpi {
+    cursor: pointer;
+}
+
+.md-kpi.clickable-kpi:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(31, 41, 55, 0.06);
+}
+
+.kpi-label {
+    color: #697386;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.kpi-value {
+    margin-top: 7px;
+    font-size: 24px;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1;
+}
+
+.kpi-sub {
+    margin-top: 8px;
+    color: #8a94a4;
+    font-size: 11px;
+}
+
+.md-card {
+    background: #fff;
+    border: 1px solid #e0e5ec;
+    border-radius: 10px;
+    padding: 17px;
+    margin-bottom: 15px;
+}
+
+.md-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.md-card-header h4 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 650;
+    color: #1d2737;
+}
+
+.md-card-header span {
+    display: block;
+    margin-top: 3px;
+    color: #8a94a4;
+    font-size: 10px;
+}
+
+.md-two-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.business-flow {
+    display: grid;
+    grid-template-columns:
+        1fr 30px 1fr 30px 1fr 30px 1fr
+        30px 1fr 30px 1fr 30px 1fr;
+    align-items: center;
+    min-height: 85px;
+}
+
+.flow-item {
+    text-align: center;
+}
+
+.flow-number {
+    font-size: 23px;
+    font-weight: 700;
+    color: #172033;
+}
+
+.flow-label {
+    margin-top: 5px;
+    font-size: 10px;
+    color: #707b8a;
+}
+
+.flow-arrow {
+    text-align: center;
+    font-size: 18px;
+    color: #aab3bf;
+}
+
+.attention-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.attention-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 4px 11px 10px;
+    border-bottom: 1px solid #edf0f4;
+    font-size: 12px;
+    border-left: 3px solid transparent;
+}
+
+.attention-row.danger {
+    border-left-color: #dc2626;
+}
+
+.attention-row.warning {
+    border-left-color: #f59e0b;
+}
+
+.attention-row strong {
+    font-weight: 550;
+}
+
+.alert-number {
+    font-weight: 700;
+    color: #5b6574;
+}
+
+.empty-state,
+.empty-table {
+    color: #9aa3b1;
+    text-align: center;
+    padding: 24px 10px;
+    font-size: 12px;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 9px;
+}
+
+.summary-stat {
+    background: #fafbfc;
+    border: 1px solid #edf0f3;
+    border-radius: 8px;
+    padding: 11px 12px;
+}
+
+.summary-stat span {
+    display: block;
+    color: #737e8d;
+    font-size: 10px;
+}
+
+.summary-stat strong {
+    display: block;
+    margin-top: 6px;
+    color: #172033;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.progress-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 16px;
+    color: #737e8d;
+    font-size: 11px;
+}
+
+.progress-track {
+    height: 8px;
+    background: #eef1f4;
+    border-radius: 20px;
+    overflow: hidden;
+    margin-top: 7px;
+}
+
+.progress-value {
+    width: 0;
+    height: 100%;
+    background: #3478d4;
+    border-radius: 20px;
+    transition: width 0.3s ease;
+}
+
+.table-title {
+    margin: 18px 0 9px;
+    font-size: 12px;
+    font-weight: 650;
+    color: #374151;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+.md-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+}
+
+.md-table th {
+    text-align: left;
+    color: #7a8493;
+    font-weight: 600;
+    padding: 8px 7px;
+    border-bottom: 1px solid #dfe4ea;
+    white-space: nowrap;
+}
+
+.md-table td {
+    padding: 9px 7px;
+    border-bottom: 1px solid #edf0f3;
+    color: #374151;
+    white-space: nowrap;
+}
+
+.clickable-row {
+    cursor: pointer;
+}
+
+.clickable-row:hover td {
+    background: #f7faff;
+}
+
+.reason-badge {
+    display: inline-block;
+    border-radius: 5px;
+    background: #fff4e5;
+    color: #a85c00;
+    padding: 3px 7px;
+    font-size: 10px;
+}
+
+.service-detail-grid {
+    margin-top: 6px;
+}
+
+.service-response-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.service-big-stat {
+    background: #fafbfc;
+    border: 1px solid #edf0f3;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.service-big-stat span {
+    display: block;
+    color: #737e8d;
+    font-size: 10px;
+}
+
+.service-big-stat strong {
+    display: block;
+    margin-top: 6px;
+    font-size: 22px;
+    color: #172033;
+}
+
+.financial-chart {
+    height: 185px;
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 8px;
+    border-bottom: 1px solid #e8ebef;
+    padding: 8px 8px 0;
+}
+
+.chart-column {
+    height: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: end;
+    align-items: center;
+    gap: 5px;
+}
+
+.chart-bars {
+    height: 150px;
+    width: 100%;
+    display: flex;
+    align-items: end;
+    justify-content: center;
+    gap: 4px;
+}
+
+.chart-bar {
+    width: 14px;
+    min-height: 2px;
+    border-radius: 3px 3px 0 0;
+}
+
+.chart-bar.revenue {
+    background: #3478d4;
+}
+
+.chart-bar.expense {
+    background: #ef6b35;
+}
+
+.chart-month {
+    color: #7b8494;
+    font-size: 10px;
+}
+
+.chart-legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 10px;
+    color: #7b8494;
+    font-size: 10px;
+}
+
+.legend {
+    width: 9px;
+    height: 9px;
+    display: inline-block;
+    border-radius: 2px;
+    margin-right: 4px;
+}
+
+.legend.revenue {
+    background: #3478d4;
+}
+
+.legend.expense {
+    background: #ef6b35;
+}
+
+.quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.quick-btn {
+    background: #fff;
+    border: 1px solid #d9dee7;
+    border-radius: 7px;
+    padding: 8px 12px;
+    font-size: 11px;
+    color: #475569;
+    cursor: pointer;
+}
+
+.quick-btn:hover {
+    background: #f7faff;
+    border-color: #9ebcf4;
+}
+
+@media (max-width: 1200px) {
+
+    .md-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .business-flow {
+        display: flex;
+        overflow-x: auto;
+        justify-content: flex-start;
+        padding-bottom: 8px;
+    }
+
+    .flow-item {
+        min-width: 110px;
+    }
+
+    .flow-arrow {
+        min-width: 28px;
+    }
+}
+
+@media (max-width: 800px) {
+
+    .management-dashboard {
+        padding: 14px;
+    }
+
+    .md-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .md-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .md-two-column {
+        grid-template-columns: 1fr;
+    }
+
+    .md-kpi-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 550px) {
+
+    .md-kpi-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .summary-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+        `;
+
+        document.head.appendChild(style);
+    }
+
+    const main = $(wrapper).find(".layout-main-section");
+
+    main.html(`
+        <div class="management-dashboard">
+
+            <!-- HEADER -->
+            <div class="md-header">
+
+                <div>
+                    <div class="md-title">
+                        Management Dashboard
+                    </div>
+
+                    <div class="md-subtitle">
+                        <span id="dashboard-period-label"></span>
+                        <span class="md-updated">
+                            · Updated <span id="last-updated">--</span>
+                        </span>
+                    </div>
+                </div>
+
+                <div class="md-actions">
+
+                    <div>
+                        <label>As of Date</label>
+                        <input
+                            type="date"
+                            id="dashboard-date"
+                            class="form-control"
+                        >
+                    </div>
+
+                    <div>
+                        <label>Period</label>
+                        <select
+                            id="dashboard-period"
+                            class="form-control"
+                        >
+                            <option value="MTD">MTD</option>
+                            <option value="QTD">QTD</option>
+                            <option value="YTD">YTD</option>
+                        </select>
+                    </div>
+
+                    <button
+                        id="refresh-dashboard"
+                        class="btn btn-primary md-refresh"
+                    >
+                        ↻ Refresh
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- TABS -->
+            <div class="md-tabs">
+
+                <button class="md-tab active" data-section="All">All</button>
+                <button class="md-tab" data-section="Sales">Sales</button>
+                <button class="md-tab" data-section="Production">Production</button>
+                <button class="md-tab" data-section="Delivery">Delivery</button>
+                <button class="md-tab" data-section="Installation">Installation</button>
+                <button class="md-tab" data-section="Service">Service</button>
+                <button class="md-tab" data-section="Inventory">Inventory</button>
+                <button class="md-tab" data-section="Finance">Finance</button>
+                <button class="md-tab" data-section="HR">HR</button>
+                <button class="md-tab" data-section="Quality">Quality</button>
+
+            </div>
+
+
+            <!-- EXECUTIVE KPI -->
+            <div class="md-kpi-grid">
+
+                ${kpi_card(
+                    "Revenue",
+                    "₹0",
+                    "Period",
+                    "Sales",
+                    "Sales Invoice"
+                )}
+
+                ${kpi_card(
+                    "Pending Orders",
+                    "0",
+                    "Current",
+                    "Sales",
+                    "Sales Order"
+                )}
+
+                ${kpi_card(
+                    "Open Work Orders",
+                    "0",
+                    "Current",
+                    "Production",
+                    "Work Order"
+                )}
+
+                ${kpi_card(
+                    "Stuck Job Cards",
+                    "0",
+                    "Hold / Overdue",
+                    "Production",
+                    "Job Card"
+                )}
+
+                ${kpi_card(
+                    "Pending Delivery",
+                    "0",
+                    "Current",
+                    "Delivery",
+                    "Sales Order"
+                )}
+
+                ${kpi_card(
+                    "Pending Installation",
+                    "0",
+                    "Items",
+                    "Installation",
+                    "Installation Note"
+                )}
+
+                ${kpi_card(
+                    "Open Complaints",
+                    "0",
+                    "Current",
+                    "Service",
+                    "Service Complaint"
+                )}
+
+                ${kpi_card(
+                    "Receivables",
+                    "₹0",
+                    "Outstanding",
+                    "Finance",
+                    "Sales Invoice"
+                )}
+
+            </div>
+
+
+            <!-- BUSINESS FLOW -->
+            <div class="md-card section-box"
+                 data-sections="All,Production,Delivery,Installation,Service">
+
+                <div class="md-card-header">
+                    <div>
+                        <h4>Business Flow</h4>
+                        <span>From customer order to after-sales service</span>
+                    </div>
+                </div>
+
+                <div class="business-flow">
+
+                    ${flow_item("flow-quotations", "Quotations")}
+                    <div class="flow-arrow">→</div>
+
+                    ${flow_item("flow-sales-orders", "Sales Orders")}
+                    <div class="flow-arrow">→</div>
+
+                    ${flow_item("flow-work-orders", "Work Orders")}
+                    <div class="flow-arrow">→</div>
+
+                    ${flow_item("flow-production", "Production")}
+                    <div class="flow-arrow">→</div>
+
+                    ${flow_item("flow-deliveries", "Deliveries")}
+                    <div class="flow-arrow">→</div>
+
+                    ${flow_item("flow-installations", "Installations")}
+                    <div class="flow-arrow">→</div>
+
+                    ${flow_item("flow-service", "Service")}
+
+                </div>
+
+            </div>
+
+
+            <!-- ATTENTION + FINANCE TREND -->
+            <div class="md-two-column">
+
+                <div class="md-card section-box"
+                     data-sections="All,Production,Delivery,Installation,Service,Finance,Inventory,Quality">
+
+                    <div class="md-card-header">
+                        <div>
+                            <h4>Needs Attention</h4>
+                            <span>Items requiring management action</span>
+                        </div>
+
+                        <span id="alert-count">0</span>
+                    </div>
+
+                    <div id="management-alerts"
+                         class="attention-list">
+                        <div class="empty-state">
+                            No critical alerts
+                        </div>
+                    </div>
+
+                </div>
+
+
+
+
+            </div>
+
+            <!-- SALES -->
+            <div class="md-card section-box sales-dashboard-section"
+                 data-sections="All,Sales">
+
+                <div class="sales-ref-card">
+
+                    <div class="sales-ref-header">
+
+                        <h3>Sales</h3>
+
+                        <button
+                            class="sales-ref-view open-list"
+                            data-doctype="Sales Order">
+                            View Sales Orders
+                        </button>
+
+                        <span>
+                            Quotation to order pipeline, team performance and collections
+                        </span>
+
+                    </div>
+
+
+                    <div class="sales-period-row">
+
+                        <button class="sales-period-btn active"
+                                data-sales-period="MTD">
+                            MTD
+                        </button>
+
+                        <button class="sales-period-btn"
+                                data-sales-period="QTD">
+                            QTD
+                        </button>
+
+                        <button class="sales-period-btn"
+                                data-sales-period="YTD">
+                            YTD
+                        </button>
+
+                        <button class="sales-period-btn"
+                                data-sales-period="Custom">
+                            Custom
+                        </button>
+
+                    </div>
+
+
+                    <!-- KPI -->
+
+                    <div class="sales-reference-kpi">
+
+                        <div class="sales-reference-k">
+
+                            <p>Revenue (invoiced)</p>
+
+                            <strong id="sales-detail-revenue">
+                                ₹0
+                            </strong>
+
+                            <small>
+                                Submitted Sales Invoice
+                            </small>
+
+                        </div>
+
+
+                        <div class="sales-reference-k">
+
+                            <p>Order value booked</p>
+
+                            <strong id="sales-detail-order-value">
+                                ₹0
+                            </strong>
+
+                            <small>
+                                Submitted Sales Orders
+                            </small>
+
+                        </div>
+
+
+                        <div class="sales-reference-k">
+
+                            <p>Open quotations</p>
+
+                            <strong id="sales-detail-open-quotations">
+                                0
+                            </strong>
+
+                            <small id="sales-detail-open-quotation-value">
+                                ₹0 value
+                            </small>
+
+                        </div>
+
+
+                        <div class="sales-reference-k">
+
+                            <p>Sales orders</p>
+
+                            <strong id="sales-detail-orders">
+                                0
+                            </strong>
+
+                            <small id="sales-detail-pending">
+                                0 pending
+                            </small>
+
+                        </div>
+
+
+                        <div class="sales-reference-k">
+
+                            <p>Quote → order</p>
+
+                            <strong id="sales-detail-conversion">
+                                0%
+                            </strong>
+
+                            <small>
+                                Orders / quotations
+                            </small>
+
+                        </div>
+
+
+                        <div class="sales-reference-k">
+
+                            <p>Avg deal size</p>
+
+                            <strong id="sales-detail-avg-deal">
+                                ₹0
+                            </strong>
+
+                            <small>
+                                Order value / orders
+                            </small>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- PIPELINE + CHART -->
+
+                    <div class="sales-reference-two">
+
+
+                        <!-- QUOTATION PIPELINE -->
+
+                        <div class="sales-reference-card">
+
+                            <div class="sales-reference-title">
+
+                                <strong>
+                                    Quotation pipeline
+                                </strong>
+
+                                <span id="sales-pipeline-summary">
+                                    0 quotations
+                                </span>
+
+                            </div>
+
+
+                            <div class="sales-reference-segment">
+
+                                <span id="sales-pipe-open"></span>
+                                <span id="sales-pipe-ordered"></span>
+                                <span id="sales-pipe-lost"></span>
+                                <span id="sales-pipe-expired"></span>
+
+                            </div>
+
+
+                            <div class="sales-reference-legend">
+
+                                <span>
+                                    <i class="sr-blue"></i>
+                                    Open
+                                    <b id="sales-pipeline-open">0</b>
+                                </span>
+
+                                <span>
+                                    <i class="sr-green"></i>
+                                    Ordered
+                                    <b id="sales-pipeline-ordered">0</b>
+                                </span>
+
+                                <span>
+                                    <i class="sr-red"></i>
+                                    Lost
+                                    <b id="sales-pipeline-lost">0</b>
+                                </span>
+
+                                <span>
+                                    <i class="sr-gray"></i>
+                                    Expired
+                                    <b id="sales-pipeline-expired">0</b>
+                                </span>
+
+                            </div>
+
+
+                            <div class="sales-reference-title sr-subtitle">
+
+                                <strong>
+                                    Expiring in 7 days
+                                </strong>
+
+                                <span id="sales-expiring-count">
+                                    0 follow-ups
+                                </span>
+
+                            </div>
+
+
+                            <div id="sales-expiring-list"
+                                 class="sales-reference-expiring">
+                            </div>
+
+                        </div>
+
+
+                        <!-- ORDERS VS REVENUE + AGING -->
+
+                        <div class="sales-reference-card">
+
+                            <div class="sales-reference-title">
+
+                                <strong>
+                                    Orders vs revenue
+                                </strong>
+
+                                <span>
+                                    Last 6 months, ₹ L
+                                </span>
+
+                            </div>
+
+
+                            <div id="sales-month-chart"
+                                 class="sales-reference-chart">
+                            </div>
+
+
+                            <div class="sales-reference-chart-labels">
+                                <span>May</span>
+                                <span>Jun</span>
+                                <span>Jul</span>
+                                <span>Aug</span>
+                                <span>Sep</span>
+                                <span>Oct</span>
+                            </div>
+
+
+                            <div class="sales-reference-legend chart">
+
+                                <span>
+                                    <i class="sr-blue"></i>
+                                    Orders booked
+                                </span>
+
+                                <span>
+                                    <i class="sr-orange"></i>
+                                    Invoiced
+                                </span>
+
+                            </div>
+
+
+                            <div class="sales-reference-title sr-aging-title">
+
+                                <strong>
+                                    Receivables aging
+                                </strong>
+
+                                <span id="sales-aging-total">
+                                    ₹0 outstanding
+                                </span>
+
+                            </div>
+
+
+                            <div class="sales-reference-aging">
+
+                                <div>
+                                    <span>0–30 d</span>
+
+                                    <div class="aging-track">
+                                        <div id="sales-aging-0-30"></div>
+                                    </div>
+
+                                    <b id="sales-aging-value-0-30">
+                                        ₹0
+                                    </b>
+                                </div>
+
+
+                                <div>
+                                    <span>31–60 d</span>
+
+                                    <div class="aging-track">
+                                        <div id="sales-aging-31-60"></div>
+                                    </div>
+
+                                    <b id="sales-aging-value-31-60">
+                                        ₹0
+                                    </b>
+                                </div>
+
+
+                                <div>
+                                    <span>61–90 d</span>
+
+                                    <div class="aging-track">
+                                        <div id="sales-aging-61-90"></div>
+                                    </div>
+
+                                    <b id="sales-aging-value-61-90">
+                                        ₹0
+                                    </b>
+                                </div>
+
+
+                                <div>
+                                    <span>90+ d</span>
+
+                                    <div class="aging-track">
+                                        <div id="sales-aging-90-plus"></div>
+                                    </div>
+
+                                    <b id="sales-aging-value-90-plus"
+                                       class="sales-red-text">
+                                        ₹0
+                                    </b>
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- SALES TEAM -->
+
+                    <div class="sales-reference-card sales-team-reference">
+
+                        <div class="sales-reference-title">
+
+                            <strong>
+                                Sales team performance
+                            </strong>
+
+                            <span>
+                                MTD vs target
+                            </span>
+
+                        </div>
+
+
+                        <div class="sales-reference-table-wrap">
+
+                            <table class="sales-reference-table">
+
+                                <thead>
+
+                                    <tr>
+                                        <th>Sales person</th>
+                                        <th>Quotations</th>
+                                        <th>Orders</th>
+                                        <th>Order value</th>
+                                        <th>Target</th>
+                                        <th>Conversion</th>
+                                    </tr>
+
+                                </thead>
+
+                                <tbody id="sales-team-body">
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- BOTTOM TABLE -->
+
+                    <div class="sales-reference-card sales-bottom-reference">
+
+                        <div class="sales-reference-tabs">
+
+                            <button
+                                class="sales-data-tab active"
+                                data-sales-table="delayed">
+                                Delayed orders
+                            </button>
+
+                            <button
+                                class="sales-data-tab"
+                                data-sales-table="customers">
+                                Top customers
+                            </button>
+
+                            <button
+                                class="sales-data-tab"
+                                data-sales-table="territory">
+                                Territory
+                            </button>
+
+                            <button
+                                class="sales-data-tab"
+                                data-sales-table="items">
+                                Item group
+                            </button>
+
+                        </div>
+
+
+                        <div class="sales-reference-table-wrap">
+
+                            <table class="sales-reference-table">
+
+                                <thead id="sales-bottom-head">
+
+                                    <tr>
+                                        <th>Sales order</th>
+                                        <th>Customer</th>
+                                        <th>Value</th>
+                                        <th>Delivery due</th>
+                                        <th>Delay</th>
+                                        <th>Status</th>
+                                    </tr>
+
+                                </thead>
+
+                                <tbody id="sales-bottom-body">
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+                <div class="md-card section-box"
+                     data-sections="Sales">
+
+                    <div class="md-card-header">
+                        <div>
+                            <h4>Revenue vs Expense</h4>
+                            <span>Last 6 months</span>
+                        </div>
+                    </div>
+
+                    <div id="financial-chart"
+                         class="financial-chart">
+                    </div>
+
+                    <div class="chart-legend">
+                        <span>
+                            <i class="legend revenue"></i> Revenue
+                        </span>
+                        <span>
+                            <i class="legend expense"></i> Expense
+                        </span>
+                    </div>
+
+                </div>
+
+
+            <!-- DELIVERY + INSTALLATION -->
+            <div class="md-two-column">
+
+                <div class="md-card section-box"
+                     data-sections="All,Delivery">
+
+                    <div class="md-card-header">
+                        <div>
+                            <h4>Delivery</h4>
+                            <span>Dispatch performance</span>
+                        </div>
+
+                        <button class="btn btn-xs btn-default open-list"
+                                data-doctype="Delivery Note">
+                            View Delivery Notes
+                        </button>
+                    </div>
+
+                    <div class="summary-grid">
+
+                        ${summary_stat(
+                            "delivery-notes",
+                            "Delivery Notes"
+                        )}
+
+                        ${summary_stat(
+                            "delivery-qty",
+                            "Delivered Qty"
+                        )}
+
+                        ${summary_stat(
+                            "delivery-pending",
+                            "Pending Orders"
+                        )}
+
+                        ${summary_stat(
+                            "delivery-delayed",
+                            "Delayed Orders"
+                        )}
+
+                    </div>
+
+                </div>
+
+
+                <div class="md-card section-box"
+                     data-sections="All,Installation">
+
+                    <div class="md-card-header">
+                        <div>
+                            <h4>Installation</h4>
+                            <span>Post-delivery installation status</span>
+                        </div>
+
+                        <button class="btn btn-xs btn-default open-list"
+                                data-doctype="Installation Note">
+                            View Installations
+                        </button>
+                    </div>
+
+                    <div class="summary-grid">
+
+                        ${summary_stat(
+                            "installation-completed",
+                            "Completed"
+                        )}
+
+                        ${summary_stat(
+                            "installation-pending",
+                            "Pending Qty"
+                        )}
+
+                        ${summary_stat(
+                            "installation-items",
+                            "Pending Documents"
+                        )}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- SERVICE -->
+            <div class="md-card section-box"
+                 data-sections="All,Service">
+
+                <div class="md-card-header">
+
+                    <div>
+                        <h4>Service</h4>
+                        <span>Service Complaint and Service Report performance</span>
+                    </div>
+
+                    <button class="btn btn-xs btn-default open-list"
+                            data-doctype="Service Complaint">
+                        View Complaints
+                    </button>
+
+                </div>
+
+
+                <div class="summary-grid">
+
+                    ${summary_stat("service-raised", "Raised")}
+                    ${summary_stat("service-open", "Open")}
+                    ${summary_stat("service-high", "High")}
+                    ${summary_stat("service-medium", "Medium")}
+                    ${summary_stat("service-low", "Low")}
+                    ${summary_stat("service-closed", "Closed")}
+                    ${summary_stat("service-reports", "Service Reports")}
+                    ${summary_stat("service-fvf", "First Visit Fix")}
+
+                </div>
+
+
+                <div class="md-two-column service-detail-grid">
+
+                    <div>
+
+                        <div class="table-title">
+                            Oldest Open Complaints
+                        </div>
+
+                        <div class="table-wrapper">
+
+                            <table class="md-table">
+
+                                <thead>
+                                    <tr>
+                                        <th>Complaint</th>
+                                        <th>Customer</th>
+                                        <th>Priority</th>
+                                        <th>Date</th>
+                                        <th>Assigned</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody id="oldest-complaints">
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="service-response-card">
+
+                        <div class="service-big-stat">
+                            <span>Average First Response</span>
+                            <strong id="service-response">
+                                0 hrs
+                            </strong>
+                        </div>
+
+                        <div class="service-big-stat">
+                            <span>Follow-up Required</span>
+                            <strong id="service-followup">
+                                0
+                            </strong>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- INVENTORY + FINANCE -->
+            <div class="md-two-column">
+
+                <div class="md-card section-box"
+                     data-sections="All,Inventory">
+
+                    <div class="md-card-header">
+                        <div>
+                            <h4>Inventory</h4>
+                            <span>Current stock position</span>
+                        </div>
+                    </div>
+
+                    <div class="summary-grid">
+
+                        ${summary_stat("inventory-value", "Stock Value")}
+                        ${summary_stat("inventory-warehouses", "Warehouses")}
+                        ${summary_stat("inventory-stock-items", "Items with Stock")}
+                        ${summary_stat("inventory-zero", "Zero Stock")}
+                        ${summary_stat("inventory-negative", "Negative Stock")}
+
+                    </div>
+
+                </div>
+
+
+                <div class="md-card section-box"
+                     data-sections="All,Finance">
+
+                    <div class="md-card-header">
+                        <div>
+                            <h4>Finance</h4>
+                            <span>Receivables and payables</span>
+                        </div>
+                    </div>
+
+                    <div class="summary-grid">
+
+                        ${summary_stat("finance-receivable", "Receivables")}
+                        ${summary_stat("finance-rec-overdue", "Overdue Receivables")}
+                        ${summary_stat("finance-payable", "Payables")}
+                        ${summary_stat("finance-pay-overdue", "Overdue Payables")}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- HR -->
+
+            <div class="md-card section-box"
+                 data-sections="All,HR">
+
+                <div class="md-card-header">
+
+                    <div>
+                        <h4>HR & Attendance</h4>
+                        <span>
+                            Workforce status for selected date
+                        </span>
+                    </div>
+
+                    <button
+                        class="btn btn-xs btn-default open-list"
+                        data-doctype="Employee">
+                        View Employees
+                    </button>
+
+                </div>
+
+
+                <div class="hr-kpi-grid">
+
+                    <div class="summary-stat hr-card-employees clickable-summary"
+                         data-doctype="Employee">
+                        <span>Active Employees</span>
+                        <strong id="hr-employees">0</strong>
+                        <small>View Employees ↗</small>
+                    </div>
+
+
+                    <div class="summary-stat hr-card-present clickable-summary"
+                         data-doctype="Attendance">
+                        <span>Present</span>
+                        <strong id="hr-present">0</strong>
+                        <small>Green · Present ↗</small>
+                    </div>
+
+
+                    <div class="summary-stat hr-card-absent">
+                        <span>Absent</span>
+                        <strong id="hr-absent">0</strong>
+                        <small>Red · Not checked in</small>
+                    </div>
+
+
+                    <div class="summary-stat hr-card-leave clickable-summary"
+                         data-doctype="Leave Application">
+                        <span>On Leave</span>
+                        <strong id="hr-on-leave">0</strong>
+                        <small>Approved Leave ↗</small>
+                    </div>
+
+
+                    <div class="summary-stat hr-card-half clickable-summary"
+                         data-doctype="Attendance">
+                        <span>Half Day</span>
+                        <strong id="hr-half-day">0</strong>
+                        <small>Attendance ↗</small>
+                    </div>
+
+
+                    <div class="summary-stat hr-card-attendance clickable-summary"
+                         data-doctype="Attendance">
+                        <span>Attendance</span>
+                        <strong id="hr-attendance">0%</strong>
+                        <small>Attendance % ↗</small>
+                    </div>
+
+
+                    <div class="summary-stat hr-card-pending clickable-summary"
+                         data-doctype="Leave Application">
+                        <span>Leave Pending</span>
+                        <strong id="hr-leaves">0</strong>
+                        <small>Pending Approval ↗</small>
+                    </div>
+
+                </div>
+
+
+                <div class="hr-source-info">
+
+                    <div>
+                        <span>Attendance Date</span>
+                        <strong id="hr-attendance-date">-</strong>
+                    </div>
+
+                    <div>
+                        <span>Attendance Basis</span>
+                        <strong id="hr-attendance-source">-</strong>
+                    </div>
+
+                    <div class="hr-source-note">
+                        <span id="hr-source-note-text">
+                            -
+                        </span>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ABSENT EMPLOYEES -->
+
+            <div class="md-card section-box hr-absent-section"
+                 data-sections="HR">
+
+                <div class="md-card-header">
+
+                    <div>
+                        <h4>Absent Employees</h4>
+                        <span id="hr-absent-subtitle">
+                            Employees without attendance/check-in
+                        </span>
+                    </div>
+
+                    <button
+                        class="btn btn-xs btn-default"
+                        id="hr-view-absent">
+                        View Attendance
+                    </button>
+
+                </div>
+
+
+                <div id="hr-absent-list"
+                     class="hr-absent-list">
+
+                    <div class="hr-empty">
+                        Loading...
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- QUALITY -->
+
+            <div class="md-card section-box"
+                 data-sections="All,Quality">
+
+                <div class="md-card-header">
+
+                    <div>
+                        <h4>Quality</h4>
+                        <span>
+                            Quality inspection status
+                        </span>
+                    </div>
+
+                    <button
+                        class="btn btn-xs btn-default open-list"
+                        data-doctype="Quality Inspection">
+                        View QIs
+                    </button>
+
+                </div>
+
+                <div class="summary-grid">
+
+                    ${summary_stat("quality-period", "Inspections")}
+                    ${summary_stat("quality-pending", "Pending")}
+                    ${summary_stat("quality-accepted", "Accepted")}
+                    ${summary_stat("quality-rejected", "Rejected")}
+
+                </div>
+
+            </div>
+
+
+            <!-- QUICK ACTIONS -->
+            <div class="md-card section-box"
+                 data-sections="All">
+
+                <div class="md-card-header">
+                    <div>
+                        <h4>Quick Access</h4>
+                        <span>Open frequently used management lists</span>
+                    </div>
+                </div>
+
+                <div class="quick-actions">
+
+                    <button class="quick-btn open-list"
+                            data-doctype="Sales Order">
+                        Sales Orders
+                    </button>
+
+                    <button class="quick-btn open-list"
+                            data-doctype="Work Order">
+                        Work Orders
+                    </button>
+
+                    <button class="quick-btn open-list"
+                            data-doctype="Job Card">
+                        Job Cards
+                    </button>
+
+                    <button class="quick-btn open-list"
+                            data-doctype="Delivery Note">
+                        Delivery Notes
+                    </button>
+
+                    <button class="quick-btn open-list"
+                            data-doctype="Installation Note">
+                        Installation Notes
+                    </button>
+
+                    <button class="quick-btn open-list"
+                            data-doctype="Service Complaint">
+                        Service Complaints
+                    </button>
+
+                    <button class="quick-btn open-list"
+                            data-doctype="Sales Invoice">
+                        Sales Invoices
+                    </button>
+
+                    <button class="quick-btn open-list"
+                            data-doctype="Purchase Invoice">
+                        Purchase Invoices
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+    `);
+
+    initialize_controls();
+}
+
+
+function kpi_card(title, value, sub, section, doctype) {
+
+    return `
+        <div class="md-kpi clickable-kpi"
+             data-section="${section}"
+             data-doctype="${doctype}">
+
+            <div class="kpi-label">
+                ${title}
+            </div>
+
+            <div class="kpi-value"
+                 id="kpi-${slug(title)}">
+                ${value}
+            </div>
+
+            <div class="kpi-sub"
+                 id="kpi-sub-${slug(title)}">
+                ${sub}
+            </div>
+
+        </div>
+    `;
+}
+
+
+function summary_stat(id, label, doctype = "") {
+
+    return `
+        <div class="summary-stat clickable-summary"
+             data-doctype="${doctype}">
+
+            <span>${label}</span>
+
+            <strong id="${id}">0</strong>
+
+            ${
+                doctype
+                ? '<small>View ↗</small>'
+                : ''
+            }
+
+        </div>
+    `;
+}
+
+
+function flow_item(id, label) {
+
+    return `
+        <div class="flow-item">
+            <div class="flow-number" id="${id}">0</div>
+            <div class="flow-label">${label}</div>
+        </div>
+    `;
+}
+
+
+function slug(text) {
+
+    return text
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+}
+
+
+function initialize_controls() {
+
+    $("#dashboard-date").val(
+        frappe.datetime.get_today()
+    );
+
+    $(".md-tab").on("click", function () {
+
+        $(".md-tab").removeClass("active");
+        $(this).addClass("active");
+
+        filter_dashboard(
+            $(this).data("section")
+        );
+    });
+
+
+    $("#dashboard-date").on(
+        "change",
+        load_dashboard
+    );
+
+
+    $("#dashboard-period").on(
+        "change",
+        load_dashboard
+    );
+
+
+    $("#refresh-dashboard").on(
+        "click",
+        load_dashboard
+    );
+
+    // Apply default All-tab visibility on initial load
+    filter_dashboard("All");
+
+
+    $(document).on("click", ".open-list", function () {
+
+        const doctype = $(this).data("doctype");
+
+        if (!doctype) {
+            return;
+        }
+
+        frappe.set_route(
+            "List",
+            doctype
+        );
+    });
+
+
+    $(document).on("click", ".clickable-kpi", function () {
+
+        const doctype = $(this).data("doctype");
+
+        if (!doctype) {
+            return;
+        }
+
+        frappe.set_route(
+            "List",
+            doctype
+        );
+    });
+
+
+    update_last_updated();
+
+    load_dashboard();
+}
+
+
+function load_dashboard() {
+
+    const date = $("#dashboard-date").val();
+    const period = $("#dashboard-period").val();
+
+    $("#refresh-dashboard").prop("disabled", true);
+
+    frappe.call({
+        method: "ppg_dashboard.api.management_dashboard.get_dashboard_data",
+
+        args: {
+            as_of_date: date,
+            period: period
+        },
+
+        callback: function (r) {
+
+            console.log("Management Dashboard Full Response:", r);
+            console.log("Management Dashboard HR:", r.message?.hr);
+
+            if (!r || !r.message) {
+                frappe.msgprint({
+                    title: "Dashboard Error",
+                    message: "No dashboard data returned.",
+                    indicator: "red"
+                });
+                return;
+            }
+
+            render_data(r.message);
+            load_sales_dashboard(date, period);
+        },
+
+        error: function (r) {
+
+            console.error(
+                "Management Dashboard API error:",
+                r
+            );
+
+            frappe.msgprint({
+                title: "Dashboard Error",
+                message: "Unable to load dashboard data.",
+                indicator: "red"
+            });
+        },
+
+        always: function () {
+
+            $("#refresh-dashboard").prop(
+                "disabled",
+                false
+            );
+
+            update_last_updated();
+        }
+    });
+}
+
+function render_data(data) {
+
+    const sales = data.sales || {};
+    const production = data.production || {};
+    const jobs = data.job_cards || {};
+    const delivery = data.delivery || {};
+    const installation = data.installation || {};
+    const service = data.service || {};
+    const inventory = data.inventory || {};
+    const finance = data.finance || {};
+    const hr = data.hr || {};
+
+    console.log("Rendering HR data:", hr);
+    console.log("ABSENT EMPLOYEES FROM BROWSER:", hr.absent_employees);
+    console.log("ABSENT COUNT FROM BROWSER:", (hr.absent_employees || []).length);
+    const quality = data.quality || {};
+
+
+    // HEADER
+
+    $("#dashboard-period-label").text(
+        format_date(data.as_of_date)
+        + " · All Plants · "
+        + $("#dashboard-period").val()
+    );
+
+
+    // KPI
+
+    set_kpi(
+        "revenue",
+        format_currency(sales.revenue),
+        "Period"
+    );
+
+    set_kpi(
+        "pending-orders",
+        format_number(sales.pending_orders),
+        sales.delayed_orders + " delayed"
+    );
+
+    set_kpi(
+        "open-work-orders",
+        format_number(production.open_work_orders),
+        production.delayed_work_orders + " delayed"
+    );
+
+    set_kpi(
+        "stuck-job-cards",
+        format_number(jobs.stuck),
+        jobs.on_hold + " on hold · "
+        + jobs.overdue + " overdue"
+    );
+
+    set_kpi(
+        "pending-delivery",
+        format_number(delivery.pending_orders),
+        delivery.delayed_orders + " delayed"
+    );
+
+    set_kpi(
+        "pending-installation",
+        format_number(installation.pending_qty),
+        installation.pending_items + " documents"
+    );
+
+    set_kpi(
+        "open-complaints",
+        format_number(service.open),
+        service.high + " High"
+    );
+
+    set_kpi(
+        "receivables",
+        format_currency(finance.receivables),
+        format_currency(finance.receivables_overdue)
+        + " overdue"
+    );
+
+
+    // BUSINESS FLOW
+
+    $("#flow-quotations").text(
+        format_number(sales.quotations)
+    );
+
+    $("#flow-sales-orders").text(
+        format_number(sales.sales_orders)
+    );
+
+    $("#flow-work-orders").text(
+        format_number(production.work_orders)
+    );
+
+    $("#flow-production").text(
+        format_number(production.produced_qty)
+    );
+
+    $("#flow-deliveries").text(
+        format_number(delivery.notes_in_period)
+    );
+
+    $("#flow-installations").text(
+        format_number(installation.completed)
+    );
+
+    $("#flow-service").text(
+        format_number(service.raised)
+    );
+
+
+    // PRODUCTION
+
+    $("#production-wo").text(
+        format_number(production.work_orders)
+    );
+
+    $("#production-completed").text(
+        format_number(production.completed_work_orders)
+    );
+
+    $("#production-planned").text(
+        format_number(production.planned_qty)
+    );
+
+    $("#production-produced").text(
+        format_number(production.produced_qty)
+    );
+
+    $("#job-open").text(
+        format_number(jobs.open)
+    );
+
+    $("#job-wip").text(
+        format_number(jobs.wip)
+    );
+
+    $("#job-hold").text(
+        format_number(jobs.on_hold)
+    );
+
+    $("#job-overdue").text(
+        format_number(jobs.overdue)
+    );
+
+    $("#production-progress").text(
+        (production.progress || 0) + "%"
+    );
+
+    $("#production-progress-bar").css(
+        "width",
+        Math.min(
+            Number(production.progress || 0),
+            100
+        ) + "%"
+    );
+
+
+    render_stuck_jobs(
+        jobs.stuck_list || []
+    );
+
+
+    // SALES
+
+    $("#sales-revenue").text(
+        format_currency(sales.revenue)
+    );
+
+    $("#sales-order-value").text(
+        format_currency(sales.order_value)
+    );
+
+    $("#sales-quotations").text(
+        format_number(sales.quotations)
+    );
+
+    $("#sales-orders").text(
+        format_number(sales.sales_orders)
+    );
+
+    $("#sales-pending").text(
+        format_number(sales.pending_orders)
+    );
+
+    $("#sales-delayed").text(
+        format_number(sales.delayed_orders)
+    );
+
+    $("#sales-conversion").text(
+        (sales.conversion || 0) + "%"
+    );
+
+
+    // DELIVERY
+
+    $("#delivery-notes").text(
+        format_number(delivery.notes_in_period)
+    );
+
+    $("#delivery-qty").text(
+        format_number(delivery.delivered_qty)
+    );
+
+    $("#delivery-pending").text(
+        format_number(delivery.pending_orders)
+    );
+
+    $("#delivery-delayed").text(
+        format_number(delivery.delayed_orders)
+    );
+
+
+    // INSTALLATION
+
+    $("#installation-completed").text(
+        format_number(installation.completed)
+    );
+
+    $("#installation-pending").text(
+        format_number(installation.pending_qty)
+    );
+
+    $("#installation-items").text(
+        format_number(installation.pending_items)
+    );
+
+
+    // SERVICE
+
+    $("#service-raised").text(
+        format_number(service.raised)
+    );
+
+    $("#service-open").text(
+        format_number(service.open)
+    );
+
+    $("#service-high").text(
+        format_number(service.high)
+    );
+
+    $("#service-medium").text(
+        format_number(service.medium)
+    );
+
+    $("#service-low").text(
+        format_number(service.low)
+    );
+
+    $("#service-closed").text(
+        format_number(service.closed)
+    );
+
+    $("#service-reports").text(
+        format_number(service.reports)
+    );
+
+    $("#service-fvf").text(
+        (service.first_visit_fix || 0) + "%"
+    );
+
+    $("#service-response").text(
+        (service.avg_first_response_hours || 0)
+        + " hrs"
+    );
+
+    $("#service-followup").text(
+        format_number(service.followup_required)
+    );
+
+
+    render_complaints(
+        service.oldest || []
+    );
+
+
+    // INVENTORY
+
+    $("#inventory-value").text(
+        format_currency(inventory.stock_value)
+    );
+
+    $("#inventory-warehouses").text(
+        format_number(inventory.warehouses)
+    );
+
+    $("#inventory-stock-items").text(
+        format_number(inventory.items_with_stock)
+    );
+
+    $("#inventory-zero").text(
+        format_number(inventory.zero_stock)
+    );
+
+    $("#inventory-negative").text(
+        format_number(inventory.negative_stock)
+    );
+
+
+    // FINANCE
+
+    $("#finance-receivable").text(
+        format_currency(finance.receivables)
+    );
+
+    $("#finance-rec-overdue").text(
+        format_currency(finance.receivables_overdue)
+    );
+
+    $("#finance-payable").text(
+        format_currency(finance.payables)
+    );
+
+    $("#finance-pay-overdue").text(
+        format_currency(finance.payables_overdue)
+    );
+
+
+    // HR
+
+    $("#hr-employees").text(
+        format_number(hr.employees)
+    );
+
+    $("#hr-present").text(
+        format_number(hr.present)
+    );
+
+    $("#hr-absent").text(
+        format_number(hr.absent)
+    );
+
+    $("#hr-on-leave").text(
+        format_number(hr.on_leave)
+    );
+
+    $("#hr-half-day").text(
+        format_number(hr.half_day)
+    );
+
+    $("#hr-attendance").text(
+        (hr.attendance_percent || 0)
+        + "%"
+    );
+
+    $("#hr-leaves").text(
+        format_number(hr.leave_pending)
+    );
+
+    $("#hr-attendance-date").text(
+        hr.attendance_date
+            ? format_date(hr.attendance_date)
+            : "-"
+    );
+
+    $("#hr-attendance-source").text(
+        hr.attendance_source || "No Data"
+    );
+
+    render_hr_absent_employees(
+        hr.absent_employees || [],
+        hr.attendance_source || "No Data"
+    );
+
+    $("#hr-attendance-date").text(
+        hr.attendance_date
+            ? format_date(hr.attendance_date)
+            : "-"
+    );
+
+    $("#hr-attendance-source").text(
+        hr.attendance_source === "Employee Checkin"
+            ? "Employee Checkin"
+            : hr.attendance_source === "Attendance"
+                ? "Attendance"
+                : "No records"
+    );
+
+    // QUALITY
+
+    $("#quality-period").text(
+        format_number(quality.inspections_period)
+    );
+
+    $("#quality-pending").text(
+        format_number(quality.pending)
+    );
+
+    $("#quality-accepted").text(
+        format_number(quality.accepted)
+    );
+
+    $("#quality-rejected").text(
+        format_number(quality.rejected)
+    );
+
+
+    // CHART
+
+    render_financial_chart(
+        data.financial_trend || []
+    );
+
+
+    // ALERTS
+
+    render_alerts(
+        data.alerts || []
+    );
+}
+
+
+function set_kpi(id, value, sub) {
+
+    $("#kpi-" + id).text(value);
+    $("#kpi-sub-" + id).text(sub);
+}
+
+
+function render_alerts(alerts) {
+
+    const container = $("#management-alerts");
+
+    container.empty();
+
+    $("#alert-count").text(
+        alerts.length
+    );
+
+
+    if (!alerts.length) {
+
+        container.html(`
+            <div class="empty-state">
+                No critical alerts
+            </div>
+        `);
+
+        return;
+    }
+
+
+    alerts.forEach(function (alert) {
+
+        container.append(`
+            <div class="attention-row ${alert.type || ""}">
+
+                <div>
+                    <strong>
+                        ${frappe.utils.escape_html(alert.message)}
+                    </strong>
+                </div>
+
+                <div class="alert-number">
+                    ${format_number(alert.count)}
+                </div>
+
+            </div>
+        `);
+
+    });
+}
+
+
+function render_stuck_jobs(rows) {
+
+    const tbody = $("#stuck-job-cards");
+
+    tbody.empty();
+
+
+    if (!rows.length) {
+
+        tbody.html(`
+            <tr>
+                <td colspan="7"
+                    class="empty-table">
+                    No stuck or overdue Job Cards
+                </td>
+            </tr>
+        `);
+
+        return;
+    }
+
+
+    rows.forEach(function (row) {
+
+        tbody.append(`
+            <tr class="clickable-row"
+                data-doctype="Job Card"
+                data-name="${frappe.utils.escape_html(row.name)}">
+
+                <td>${frappe.utils.escape_html(row.name || "-")}</td>
+                <td>${frappe.utils.escape_html(row.work_order || "-")}</td>
+                <td>${frappe.utils.escape_html(row.operation || "-")}</td>
+                <td>${frappe.utils.escape_html(row.workstation || "-")}</td>
+                <td>${frappe.utils.escape_html(row.status || "-")}</td>
+                <td>${row.expected_end_date
+                    ? format_date(row.expected_end_date)
+                    : "-"
+                }</td>
+                <td>
+                    <span class="reason-badge">
+                        ${frappe.utils.escape_html(row.reason || "-")}
+                    </span>
+                </td>
+
+            </tr>
+        `);
+
+    });
+}
+
+
+function render_complaints(rows) {
+
+    const tbody = $("#oldest-complaints");
+
+    tbody.empty();
+
+
+    if (!rows.length) {
+
+        tbody.html(`
+            <tr>
+                <td colspan="5"
+                    class="empty-table">
+                    No open complaints
+                </td>
+            </tr>
+        `);
+
+        return;
+    }
+
+
+    rows.forEach(function (row) {
+
+        tbody.append(`
+            <tr class="clickable-row"
+                data-doctype="Service Complaint"
+                data-name="${frappe.utils.escape_html(row.name)}">
+
+                <td>${frappe.utils.escape_html(row.name || "-")}</td>
+                <td>${frappe.utils.escape_html(row.customer || "-")}</td>
+                <td>${frappe.utils.escape_html(row.priority || "-")}</td>
+                <td>${format_date(row.date)}</td>
+                <td>${frappe.utils.escape_html(row.assigned_employee || "-")}</td>
+
+            </tr>
+        `);
+
+    });
+}
+
+
+function render_financial_chart(rows) {
+
+    const container = $("#financial-chart");
+
+    container.empty();
+
+
+    if (!rows.length) {
+        return;
+    }
+
+
+    const maxValue = Math.max(
+        1,
+        ...rows.flatMap(row => [
+            Number(row.revenue || 0),
+            Number(row.expense || 0)
+        ])
+    );
+
+
+    rows.forEach(function (row) {
+
+        const revenueHeight =
+            (Number(row.revenue || 0) / maxValue) * 100;
+
+        const expenseHeight =
+            (Number(row.expense || 0) / maxValue) * 100;
+
+
+        container.append(`
+            <div class="chart-column">
+
+                <div class="chart-bars">
+
+                    <div class="chart-bar revenue"
+                         style="height:${Math.max(revenueHeight, 2)}%">
+                    </div>
+
+                    <div class="chart-bar expense"
+                         style="height:${Math.max(expenseHeight, 2)}%">
+                    </div>
+
+                </div>
+
+                <div class="chart-month">
+                    ${frappe.utils.escape_html(row.label)}
+                </div>
+
+            </div>
+        `);
+
+    });
+}
+
+
+function render_absent_employees(rows) {
+
+    const container = $("#absent-employees-list");
+
+    container.empty();
+
+    $("#absent-count-label").text(
+        rows.length + (rows.length === 1 ? " employee" : " employees")
+    );
+
+    if (!rows.length) {
+
+        container.html(`
+            <div class="absent-empty">
+                <span class="status-dot present-dot"></span>
+                No absent employees
+            </div>
+        `);
+
+        return;
+    }
+
+    rows.slice(0, 8).forEach(function (row) {
+
+        container.append(`
+            <div class="absent-employee-row"
+                 data-employee="${frappe.utils.escape_html(row.employee || "")}">
+
+                <div class="employee-avatar">
+                    ${(row.employee_name || row.employee || "?").charAt(0).toUpperCase()}
+                </div>
+
+                <div class="employee-info">
+
+                    <strong>
+                        ${frappe.utils.escape_html(
+                            row.employee_name || row.employee || "-"
+                        )}
+                    </strong>
+
+                    <span>
+                        ${frappe.utils.escape_html(
+                            row.employee || "-"
+                        )}
+                        ${
+                            row.department
+                            ? " · " + frappe.utils.escape_html(row.department)
+                            : ""
+                        }
+                    </span>
+
+                </div>
+
+                <span class="absent-badge">
+                    Absent
+                </span>
+
+            </div>
+        `);
+
+    });
+
+    $(".absent-employee-row").on("click", function () {
+
+        const employee = $(this).data("employee");
+
+        if (employee) {
+            frappe.set_route(
+                "Form",
+                "Employee",
+                employee
+            );
+        }
+
+    });
+}
+
+
+$(document).on("click", "#view-absent-employees", function () {
+
+    frappe.set_route(
+        "List",
+        "Employee",
+        {
+            status: "Active"
+        }
+    );
+
+});
+
+
+
+function render_hr_absent_employees(rows, source) {
+
+    const list = $("#hr-absent-list");
+
+    if (!list.length) {
+        return;
+    }
+
+    list.empty();
+
+    $("#hr-absent-subtitle").text(
+        rows.length +
+        (rows.length === 1
+            ? " employee absent"
+            : " employees absent")
+        + " · " +
+        (source === "Employee Checkin"
+            ? "based on missing check-in"
+            : "based on Attendance")
+    );
+
+
+    if (!rows.length) {
+
+        list.html(`
+            <div class="hr-empty hr-no-absent">
+
+                <span class="hr-status-dot green"></span>
+
+                <div>
+                    <strong>No absent employees</strong>
+                    <span>Everyone has attendance/check-in.</span>
+                </div>
+
+            </div>
+        `);
+
+        return;
+    }
+
+
+    rows.forEach(function(row) {
+
+        const employee =
+            row.employee || "";
+
+        const employee_name =
+            row.employee_name ||
+            employee ||
+            "Unknown Employee";
+
+        const department =
+            row.department ||
+            "";
+
+        const initial =
+            employee_name
+                .charAt(0)
+                .toUpperCase();
+
+
+        list.append(`
+            <div
+                class="hr-absent-row"
+                data-employee="${frappe.utils.escape_html(employee)}">
+
+                <div class="hr-avatar">
+                    ${frappe.utils.escape_html(initial)}
+                </div>
+
+                <div class="hr-employee-info">
+
+                    <strong>
+                        ${frappe.utils.escape_html(employee_name)}
+                    </strong>
+
+                    <span>
+                        ${frappe.utils.escape_html(employee)}
+
+                        ${
+                            department
+                                ? " · " +
+                                  frappe.utils.escape_html(department)
+                                : ""
+                        }
+                    </span>
+
+                </div>
+
+                <div class="hr-absent-status">
+                    <span class="hr-status-dot red"></span>
+                    Absent
+                </div>
+
+            </div>
+        `);
+
+    });
+
+
+    list.find(".hr-absent-row")
+        .off("click")
+        .on("click", function() {
+
+            const employee =
+                $(this).data("employee");
+
+            if (employee) {
+
+                frappe.set_route(
+                    "Form",
+                    "Employee",
+                    employee
+                );
+
+            }
+
+        });
+
+}
+
+
+$(document)
+    .off("click", "#hr-view-absent")
+    .on("click", "#hr-view-absent", function() {
+
+        const selected_date =
+            $("#dashboard-date").val();
+
+        frappe.set_route(
+            "List",
+            "Attendance",
+            {
+                attendance_date: selected_date,
+                status: "Absent"
+            }
+        );
+
+    });
+
+
+function filter_dashboard(section) {
+
+    if (section === "All") {
+
+        $(".md-kpi").show();
+
+        $(".section-box").each(function () {
+
+            const sections =
+                String($(this).data("sections") || "")
+                    .split(",");
+
+            $(this).toggle(
+                sections.includes("All")
+            );
+        });
+
+        // HR-only sections must stay hidden on All tab
+        $(".section-box[data-sections='HR']").hide();
+
+        return;
+    }
+
+
+    $(".md-kpi").each(function () {
+
+        $(this).toggle(
+            $(this).data("section") === section
+        );
+
+    });
+
+    // Sales has its own detailed KPI dashboard.
+    if (section === "Sales") {
+        $(".md-kpi").hide();
+    }
+
+
+    $(".section-box").each(function () {
+
+        const sections =
+            String($(this).data("sections") || "")
+                .split(",");
+
+        $(this).toggle(
+            sections.includes(section)
+        );
+
+    });
+}
+
+
+$(document).on("click", ".clickable-summary", function () {
+
+    const doctype = $(this).data("doctype");
+
+    if (doctype) {
+
+        frappe.set_route(
+            "List",
+            doctype
+        );
+
+    }
+
+});
+
+
+$(document).on("click", ".clickable-row", function () {
+
+    const doctype = $(this).data("doctype");
+    const name = $(this).data("name");
+
+    if (doctype && name) {
+
+        frappe.set_route(
+            "Form",
+            doctype,
+            name
+        );
+    }
+
+});
+
+
+function update_last_updated() {
+
+    $("#last-updated").text(
+        new Date().toLocaleString(
+            "en-IN",
+            {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+            }
+        )
+    );
+}
+
+
+function format_date(value) {
+
+    if (!value) {
+        return "-";
+    }
+
+    const date = new Date(
+        String(value).replace(" ", "T")
+    );
+
+    if (isNaN(date.getTime())) {
+        return value;
+    }
+
+    return date.toLocaleDateString(
+        "en-IN",
+        {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        }
+    );
+}
+
+
+function format_number(value) {
+
+    return Number(value || 0).toLocaleString(
+        "en-IN",
+        {
+            maximumFractionDigits: 2
+        }
+    );
+}
+
+
+function format_currency(value) {
+
+    const amount = Number(value || 0);
+
+    if (Math.abs(amount) >= 10000000) {
+
+        return "₹"
+            + (amount / 10000000).toFixed(2)
+            + " Cr";
+    }
+
+    if (Math.abs(amount) >= 100000) {
+
+        return "₹"
+            + (amount / 100000).toFixed(2)
+            + " L";
+    }
+
+    return "₹"
+        + amount.toLocaleString(
+            "en-IN",
+            {
+                maximumFractionDigits: 0
+            }
+        );
+}
+
+
+
+
+/* =========================================================
+   SALES MANAGEMENT DASHBOARD
+   ========================================================= */
+
+function load_sales_dashboard(as_of_date, period, custom_from_date = null, custom_to_date = null) {
+
+    frappe.call({
+
+        method: "ppg_dashboard.api.management_dashboard.get_sales_dashboard",
+
+        args: {
+            as_of_date: as_of_date,
+            period: period,
+                custom_from_date: custom_from_date || null,
+                custom_to_date: custom_to_date || null
+        },
+
+        callback: function(r) {
+
+            if (!r || !r.message) {
+                console.error("Sales dashboard data not returned");
+                return;
+            }
+
+            render_sales_dashboard(r.message);
+        },
+
+        error: function(r) {
+            console.error(
+                "Sales dashboard error:",
+                r
+            );
+        }
+
+    });
+}
+
+
+function sales_money(value) {
+
+    return format_currency(
+        Number(value || 0)
+    );
+
+}
+
+
+function sales_escape(value) {
+
+    return frappe.utils.escape_html(
+        String(value ?? "")
+    );
+
+}
+
+
+function render_sales_dashboard(data) {
+
+    window.__sales_dashboard_data = data;
+
+    const period = data.period || "MTD";
+
+    $(".sales-period-btn").removeClass("active");
+
+    $(
+        '.sales-period-btn[data-sales-period="' +
+        period +
+        '"]'
+    ).addClass("active");
+
+
+    $("#sales-detail-revenue").text(
+        sales_money(data.revenue)
+    );
+
+    $("#sales-detail-order-value").text(
+        sales_money(data.order_value)
+    );
+
+    $("#sales-detail-open-quotations").text(
+        format_number(data.open_quotations || 0)
+    );
+
+    $("#sales-detail-open-quotation-value").text(
+        sales_money(data.open_quotation_value) + " value"
+    );
+
+    $("#sales-detail-orders").text(
+        format_number(data.sales_orders || 0)
+    );
+
+    $("#sales-detail-pending").text(
+        format_number(data.pending_orders || 0) +
+        " pending"
+    );
+
+    $("#sales-detail-conversion").text(
+        Number(data.conversion || 0).toFixed(1) + "%"
+    );
+
+    $("#sales-detail-avg-deal").text(
+        sales_money(data.avg_deal_size)
+    );
+
+
+    $("#sales-snapshot-pending").text(
+        format_number(data.pending_orders || 0)
+    );
+
+    $("#sales-snapshot-delayed").text(
+        format_number(data.delayed_orders || 0)
+    );
+
+    $("#sales-snapshot-quotation-value").text(
+        sales_money(data.quotation_value)
+    );
+
+    $("#sales-snapshot-open-value").text(
+        sales_money(data.open_quotation_value)
+    );
+
+
+    render_sales_pipeline(data);
+
+    render_sales_expiring(data.expiring || []);
+
+    render_sales_month_chart(data.monthly || []);
+
+    render_sales_aging(
+        data.aging || {},
+        data.aging_total || 0
+    );
+
+    render_sales_team(
+        data.sales_team || []
+    );
+
+    render_sales_bottom_table(
+        data,
+        "delayed"
+    );
+
+}
+
+
+function render_sales_pipeline(data) {
+
+    const p = data.pipeline || {};
+
+    const total =
+        (p.open || 0) +
+        (p.ordered || 0) +
+        (p.lost || 0) +
+        (p.expired || 0);
+
+    $("#sales-pipeline-summary").text(
+        format_number(total) +
+        " quotations · " +
+        sales_money(data.quotation_value)
+    );
+
+
+    $("#sales-pipeline-open").text(
+        format_number(p.open || 0)
+    );
+
+    $("#sales-pipeline-ordered").text(
+        format_number(p.ordered || 0)
+    );
+
+    $("#sales-pipeline-lost").text(
+        format_number(p.lost || 0)
+    );
+
+    $("#sales-pipeline-expired").text(
+        format_number(p.expired || 0)
+    );
+
+
+    const percent =
+        p.percent || {};
+
+
+    $("#sales-pipe-open").css(
+        "width",
+        (percent.open || 0) + "%"
+    );
+
+    $("#sales-pipe-ordered").css(
+        "width",
+        (percent.ordered || 0) + "%"
+    );
+
+    $("#sales-pipe-lost").css(
+        "width",
+        (percent.lost || 0) + "%"
+    );
+
+    $("#sales-pipe-expired").css(
+        "width",
+        (percent.expired || 0) + "%"
+    );
+
+}
+
+
+function render_sales_expiring(rows) {
+
+    $("#sales-expiring-count").text(
+        rows.length +
+        " follow-up" +
+        (rows.length === 1 ? "" : "s")
+    );
+
+
+    const list = $("#sales-expiring-list");
+
+    list.empty();
+
+
+    if (!rows.length) {
+
+        list.html(`
+            <div class="sales-empty-state">
+                No quotations expiring in the next 7 days.
+            </div>
+        `);
+
+        return;
+    }
+
+
+    rows.forEach(function(row) {
+
+        list.append(`
+
+            <div class="sales-expiring-row">
+
+                <div>
+
+                    <strong>
+                        ${sales_escape(row.name)}
+                    </strong>
+
+                    <span>
+                        ${sales_escape(
+                            row.customer_name || "-"
+                        )}
+                    </span>
+
+                </div>
+
+                <strong>
+                    ${sales_money(row.base_grand_total)}
+                </strong>
+
+                <span class="sales-days-pill ${
+                    Number(row.days_left || 0) <= 2
+                        ? "danger"
+                        : Number(row.days_left || 0) <= 5
+                            ? "warning"
+                            : "normal"
+                }">
+
+                    ${Number(row.days_left || 0)} days
+
+                </span>
+
+            </div>
+
+        `);
+
+    });
+
+}
+
+
+function render_sales_month_chart(rows) {
+
+    const chart = $("#sales-month-chart");
+
+    chart.empty();
+
+    if (!rows.length) {
+        chart.html(`
+            <div class="sales-empty-state">
+                No monthly sales data.
+            </div>
+        `);
+        return;
+    }
+
+    const maxValue = Math.max(
+        ...rows.map(function(row) {
+            return Math.max(
+                Number(row.orders || 0),
+                Number(row.revenue || 0)
+            );
+        }),
+        1
+    );
+
+    rows.forEach(function(row) {
+
+        const orders = Number(row.orders || 0);
+        const revenue = Number(row.revenue || 0);
+
+        const orderHeight = Math.max(
+            5,
+            (orders / maxValue) * 100
+        );
+
+        const revenueHeight = Math.max(
+            5,
+            (revenue / maxValue) * 100
+        );
+
+        chart.append(`
+            <div
+                class="sales-month-column"
+                data-month="${sales_escape(row.label)}"
+                data-orders="${orders}"
+                data-revenue="${revenue}"
+            >
+
+                <div class="sales-month-bars">
+
+                    <div
+                        class="sales-bar orders"
+                        style="height:${orderHeight}%"
+                    ></div>
+
+                    <div
+                        class="sales-bar revenue"
+                        style="height:${revenueHeight}%"
+                    ></div>
+
+                </div>
+
+                <span>
+                    ${sales_escape(row.label)}
+                </span>
+
+                <div class="sales-month-value-popup">
+                    <strong>${sales_escape(row.label)}</strong>
+                    <div>
+                        Orders booked:
+                        <b>${sales_money(orders)}</b>
+                    </div>
+                    <div>
+                        Invoiced:
+                        <b>${sales_money(revenue)}</b>
+                    </div>
+                </div>
+
+            </div>
+        `);
+
+    });
+}
+
+
+function render_sales_aging(aging, total) {
+
+    $("#sales-aging-total").text(
+        sales_money(total) +
+        " outstanding"
+    );
+
+
+    const values = {
+        "0-30": Number(aging["0_30"] || 0),
+        "31-60": Number(aging["31_60"] || 0),
+        "61-90": Number(aging["61_90"] || 0),
+        "90-plus": Number(aging["90_plus"] || 0)
+    };
+
+
+    const maxValue = Math.max(
+        ...Object.values(values),
+        1
+    );
+
+
+    Object.entries(values).forEach(
+        function([key, value]) {
+
+            $("#sales-aging-value-" + key).text(
+                sales_money(value)
+            );
+
+            $("#sales-aging-" + key).css(
+                "width",
+                Math.max(
+                    3,
+                    (value / maxValue) * 100
+                ) + "%"
+            );
+
+        }
+    );
+
+}
+
+
+function render_sales_team(rows) {
+
+    const body = $("#sales-team-body");
+
+    body.empty();
+
+    if (!rows.length) {
+
+        body.html(`
+            <tr>
+                <td colspan="6" class="sales-empty-cell">
+                    No Sales Person data available.
+                </td>
+            </tr>
+        `);
+
+        return;
+    }
+
+    rows.forEach(function(row) {
+
+        const target = Number(row.target || 0);
+
+        const achievement =
+            target
+                ? Math.min(
+                    100,
+                    (
+                        Number(row.order_value || 0)
+                        / target
+                    ) * 100
+                )
+                : 0;
+
+        const initials =
+            String(
+                row.sales_person_name ||
+                row.sales_person ||
+                "SP"
+            )
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map(x => x.charAt(0).toUpperCase())
+            .join("");
+
+        body.append(`
+
+            <tr>
+
+                <td>
+                    <span class="sales-avatar">
+                        ${sales_escape(initials)}
+                    </span>
+
+                    ${sales_escape(
+                        row.sales_person_name ||
+                        row.sales_person ||
+                        "-"
+                    )}
+                </td>
+
+                <td>
+                    ${format_number(row.quotations || 0)}
+                </td>
+
+                <td>
+                    ${format_number(row.orders || 0)}
+                </td>
+
+                <td>
+                    ${sales_money(row.order_value)}
+                </td>
+
+                <td>
+
+                    ${
+                        target
+                            ? `
+                                <span class="sales-target-bar">
+                                    <i style="width:${achievement}%"></i>
+                                </span>
+
+                                ${Math.round(achievement)}%
+                              `
+                            : "—"
+                    }
+
+                </td>
+
+                <td class="${
+                    Number(row.conversion || 0) >= 35
+                        ? "sales-green-text"
+                        : Number(row.conversion || 0) >= 20
+                            ? "sales-warning-text"
+                            : "sales-red-text"
+                }">
+
+                    ${Number(
+                        row.conversion || 0
+                    ).toFixed(1)}%
+
+                </td>
+
+            </tr>
+
+        `);
+
+    });
+
+}
+
+
+function render_sales_bottom_table(data, mode) {
+
+    const head = $("#sales-bottom-head");
+    const body = $("#sales-bottom-body");
+
+    body.empty();
+
+
+    if (mode === "delayed") {
+
+        head.html(`
+            <tr>
+                <th>Sales order</th>
+                <th>Customer</th>
+                <th>Value</th>
+                <th>Delivery due</th>
+                <th>Delay</th>
+                <th>Status</th>
+            </tr>
+        `);
+
+
+        const rows = data.delayed || [];
+
+
+        if (!rows.length) {
+
+            body.html(`
+                <tr>
+                    <td colspan="6">
+                        <div class="sales-empty-state">
+                            No delayed orders.
+                        </div>
+                    </td>
+                </tr>
+            `);
+
+            return;
+        }
+
+
+        rows.forEach(function(row) {
+
+            body.append(`
+                <tr>
+
+                    <td>
+                        ${sales_escape(row.sales_order)}
+                    </td>
+
+                    <td>
+                        ${sales_escape(
+                            row.customer_name ||
+                            row.customer ||
+                            "-"
+                        )}
+                    </td>
+
+                    <td>
+                        ${sales_money(row.base_grand_total)}
+                    </td>
+
+                    <td>
+                        ${sales_escape(
+                            row.delivery_date || "-"
+                        )}
+                    </td>
+
+                    <td class="sales-danger-text">
+                        ${Number(row.delay_days || 0)} days
+                    </td>
+
+                    <td>
+                        <span class="sales-status-pill">
+                            ${sales_escape(row.status || "-")}
+                        </span>
+                    </td>
+
+                </tr>
+            `);
+
+        });
+
+        return;
+    }
+
+
+    if (mode === "customers") {
+
+        head.html(`
+            <tr>
+                <th>Customer</th>
+                <th>Orders</th>
+                <th>Order value</th>
+            </tr>
+        `);
+
+
+        (data.top_customers || []).forEach(function(row) {
+
+            body.append(`
+                <tr>
+                    <td>${sales_escape(row.customer_name || row.customer)}</td>
+                    <td>${format_number(row.orders || 0)}</td>
+                    <td>${sales_money(row.order_value)}</td>
+                </tr>
+            `);
+
+        });
+
+        return;
+    }
+
+
+    if (mode === "territory") {
+
+        head.html(`
+            <tr>
+                <th>Territory</th>
+                <th>Orders</th>
+                <th>Order value</th>
+            </tr>
+        `);
+
+
+        (data.territories || []).forEach(function(row) {
+
+            body.append(`
+                <tr>
+                    <td>${sales_escape(row.territory)}</td>
+                    <td>${format_number(row.orders || 0)}</td>
+                    <td>${sales_money(row.order_value)}</td>
+                </tr>
+            `);
+
+        });
+
+        return;
+    }
+
+
+    head.html(`
+        <tr>
+            <th>Item group</th>
+            <th>Orders</th>
+            <th>Order value</th>
+        </tr>
+    `);
+
+
+    (data.item_groups || []).forEach(function(row) {
+
+        body.append(`
+            <tr>
+                <td>${sales_escape(row.item_group)}</td>
+                <td>${format_number(row.orders || 0)}</td>
+                <td>${sales_money(row.order_value)}</td>
+            </tr>
+        `);
+
+    });
+
+}
+
+
+$(document)
+    .off("click.salesPeriod", ".sales-period-btn")
+    .on("click.salesPeriod", ".sales-period-btn", function() {
+
+        const period =
+            $(this).data("sales-period");
+
+        $(".sales-period-btn").removeClass("active");
+
+        $(this).addClass("active");
+
+        load_sales_dashboard(
+            $("#dashboard-date").val(),
+            period
+        );
+
+    });
+
+
+$(document)
+    .off("click.salesDataTab", ".sales-data-tab")
+    .on("click.salesDataTab", ".sales-data-tab", function() {
+
+        $(".sales-data-tab").removeClass("active");
+
+        $(this).addClass("active");
+
+        render_sales_bottom_table(
+            window.__sales_dashboard_data || {},
+            $(this).data("sales-table")
+        );
+
+    });
+
+
+
+/* SALES DASHBOARD INTERACTION V3 */
+(function () {
+
+    function dashboard_date_iso() {
+        const v = $("#dashboard-date").val() || "";
+
+        let m = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (m) return v;
+
+        m = v.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+        if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+
+        return frappe.datetime.get_today();
+    }
+
+    function sales_period_range() {
+
+        const period = $(".sales-period-btn.active").data("sales-period") || "MTD";
+
+        if (
+            period === "Custom" &&
+            window.sales_dashboard_custom_from &&
+            window.sales_dashboard_custom_to
+        ) {
+            return {
+                from: window.sales_dashboard_custom_from,
+                to: window.sales_dashboard_custom_to
+            };
+        }
+
+        const to = dashboard_date_iso();
+        const d = new Date(`${to}T12:00:00`);
+
+        let from = new Date(d);
+
+        if (period === "YTD") {
+            from = new Date(d.getFullYear(), 0, 1);
+        } else if (period === "QTD") {
+            const quarter_start = Math.floor(d.getMonth() / 3) * 3;
+            from = new Date(d.getFullYear(), quarter_start, 1);
+        } else {
+            from = new Date(d.getFullYear(), d.getMonth(), 1);
+        }
+
+        const iso = dt => {
+            const y = dt.getFullYear();
+            const m = String(dt.getMonth() + 1).padStart(2, "0");
+            const day = String(dt.getDate()).padStart(2, "0");
+            return `${y}-${m}-${day}`;
+        };
+
+        return {
+            from: iso(from),
+            to: to
+        };
+    }
+
+    function open_sales_list(doctype, filters = {}) {
+        frappe.route_options = filters;
+        frappe.set_route("List", doctype);
+    }
+
+    function between(field, range) {
+        return [field, ["between", [range.from, range.to]]];
+    }
+
+    // -----------------------------
+    // CUSTOM PERIOD
+    // -----------------------------
+    $(document)
+        .off("click.salesCustom", ".sales-period-btn")
+        .on("click.salesCustom", ".sales-period-btn", function (e) {
+
+            const period = $(this).data("sales-period");
+
+            if (period !== "Custom") {
+                return;
+            }
+
+            e.preventDefault();
+            e.stopImmediatePropagation();
+
+            const today = dashboard_date_iso();
+            const default_from =
+                window.sales_dashboard_custom_from ||
+                `${today.slice(0, 7)}-01`;
+
+            const default_to =
+                window.sales_dashboard_custom_to ||
+                today;
+
+            const dialog = new frappe.ui.Dialog({
+                title: "Custom Sales Period",
+                fields: [
+                    {
+                        fieldname: "from_date",
+                        fieldtype: "Date",
+                        label: "From Date",
+                        reqd: 1,
+                        default: default_from
+                    },
+                    {
+                        fieldname: "to_date",
+                        fieldtype: "Date",
+                        label: "To Date",
+                        reqd: 1,
+                        default: default_to
+                    }
+                ],
+                primary_action_label: "Apply",
+                primary_action(values) {
+
+                    if (values.from_date > values.to_date) {
+                        frappe.msgprint("From Date cannot be after To Date");
+                        return;
+                    }
+
+                    window.sales_dashboard_custom_from = values.from_date;
+                    window.sales_dashboard_custom_to = values.to_date;
+
+                    $(".sales-period-btn").removeClass("active");
+                    $('.sales-period-btn[data-sales-period="Custom"]')
+                        .addClass("active");
+
+                    dialog.hide();
+
+                    load_sales_dashboard(
+                        values.to_date,
+                        "Custom",
+                        values.from_date,
+                        values.to_date
+                    );
+                }
+            });
+
+            dialog.show();
+        });
+
+
+    // -----------------------------
+    // SALES KPI CLICK
+    // -----------------------------
+    $(document)
+        .off("click.salesKPI")
+        .on("click.salesKPI",
+            "#sales-detail-revenue, #sales-detail-order-value, " +
+            "#sales-detail-open-quotations, #sales-detail-orders, " +
+            "#sales-detail-pending",
+            function () {
+
+                const id = this.id;
+                const range = sales_period_range();
+
+                if (id === "sales-detail-revenue") {
+
+                    open_sales_list("Sales Invoice", {
+                        docstatus: 1,
+                        is_return: 0,
+                        posting_date: ["between", [range.from, range.to]]
+                    });
+
+                } else if (id === "sales-detail-order-value") {
+
+                    open_sales_list("Sales Order", {
+                        docstatus: 1,
+                        transaction_date: ["between", [range.from, range.to]]
+                    });
+
+                } else if (id === "sales-detail-open-quotations") {
+
+                    open_sales_list("Quotation", {
+                        docstatus: 1,
+                        transaction_date: ["between", [range.from, range.to]]
+                    });
+
+                } else if (id === "sales-detail-orders") {
+
+                    open_sales_list("Sales Order", {
+                        docstatus: 1,
+                        transaction_date: ["between", [range.from, range.to]]
+                    });
+
+                } else if (id === "sales-detail-pending") {
+
+                    open_sales_list("Sales Order", {
+                        docstatus: 1,
+                        transaction_date: ["between", [range.from, range.to]],
+                        per_delivered: ["<", 100],
+                        status: ["not in", [
+                            "Completed",
+                            "Closed",
+                            "Cancelled"
+                        ]]
+                    });
+                }
+            }
+        );
+
+
+    // -----------------------------
+    // PIPELINE CLICK
+    // -----------------------------
+    $(document)
+        .off("click.salesPipeline",
+            "#sales-pipe-open, #sales-pipe-ordered, " +
+            "#sales-pipe-lost, #sales-pipe-expired, " +
+            "#sales-pipeline-open, #sales-pipeline-ordered, " +
+            "#sales-pipeline-lost, #sales-pipeline-expired"
+        )
+        .on("click.salesPipeline",
+            "#sales-pipe-open, #sales-pipe-ordered, " +
+            "#sales-pipe-lost, #sales-pipe-expired, " +
+            "#sales-pipeline-open, #sales-pipeline-ordered, " +
+            "#sales-pipeline-lost, #sales-pipeline-expired",
+            function () {
+
+                const range = sales_period_range();
+                const id = this.id;
+
+                const filters = {
+                    docstatus: 1,
+                    transaction_date: ["between", [range.from, range.to]]
+                };
+
+                if (
+                    id.includes("open")
+                ) {
+                    filters.status = [
+                        "in",
+                        ["Open", "Replied", "Partially Ordered"]
+                    ];
+                } else if (id.includes("ordered")) {
+                    filters.status = "Ordered";
+                } else if (id.includes("lost")) {
+                    filters.status = "Lost";
+                } else if (id.includes("expired")) {
+                    filters.status = "Expired";
+                }
+
+                open_sales_list("Quotation", filters);
+            }
+        );
+
+
+    // -----------------------------
+    // VIEW SALES ORDERS BUTTON
+    // -----------------------------
+    $(document)
+        .off("click.salesViewOrders",
+            ".sales-dashboard-section .open-list[data-doctype='Sales Order']"
+        )
+        .on("click.salesViewOrders",
+            ".sales-dashboard-section .open-list[data-doctype='Sales Order']",
+            function (e) {
+
+                e.preventDefault();
+                e.stopImmediatePropagation();
+
+                const range = sales_period_range();
+
+                open_sales_list("Sales Order", {
+                    docstatus: 1,
+                    transaction_date: ["between", [range.from, range.to]]
+                });
+            }
+        );
+
+
+    // -----------------------------
+    // DELAYED ORDERS
+    // -----------------------------
+    $(document)
+        .off("click.salesDelayed", "#sales-delayed-count")
+        .on("click.salesDelayed", "#sales-delayed-count", function () {
+
+            const as_of_date = dashboard_date_iso();
+
+            open_sales_list("Sales Order", {
+                docstatus: 1,
+                per_delivered: ["<", 100],
+                status: ["not in", [
+                    "Completed",
+                    "Closed",
+                    "Cancelled"
+                ]],
+                delivery_date: ["<", as_of_date]
+            });
+        });
+
+
+    // -----------------------------
+    // VISUAL CLICK FEEDBACK
+    // -----------------------------
+    $(
+        "#sales-detail-revenue, " +
+        "#sales-detail-order-value, " +
+        "#sales-detail-open-quotations, " +
+        "#sales-detail-orders, " +
+        "#sales-detail-pending, " +
+        "#sales-pipe-open, " +
+        "#sales-pipe-ordered, " +
+        "#sales-pipe-lost, " +
+        "#sales-pipe-expired, " +
+        "#sales-pipeline-open, " +
+        "#sales-pipeline-ordered, " +
+        "#sales-pipeline-lost, " +
+        "#sales-pipeline-expired, " +
+        "#sales-delayed-count"
+    ).css({
+        cursor: "pointer"
+    });
+
+})();
+
+
+/* SALES MONTH VALUE CLICK V2 */
+
+$(document)
+    .off("click.salesMonthValue", ".sales-month-column")
+    .on("click.salesMonthValue", ".sales-month-column", function(e) {
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const month = $(this).data("month") || "";
+        const orders = Number($(this).data("orders") || 0);
+        const revenue = Number($(this).data("revenue") || 0);
+
+        frappe.msgprint({
+            title: month + " Sales",
+            indicator: "blue",
+            message: `
+                <div style="padding:6px 0; font-size:13px;">
+                    <div style="margin-bottom:8px;">
+                        <strong>Orders booked</strong>
+                        <span style="float:right;">
+                            ${sales_money(orders)}
+                        </span>
+                    </div>
+
+                    <div>
+                        <strong>Invoiced</strong>
+                        <span style="float:right;">
+                            ${sales_money(revenue)}
+                        </span>
+                    </div>
+                </div>
+            `
+        });
+    });

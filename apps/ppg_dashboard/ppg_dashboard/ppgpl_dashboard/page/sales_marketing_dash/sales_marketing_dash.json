@@ -4,13 +4,20 @@
  "docstatus": 0,
  "doctype": "Page",
  "idx": 0,
- "modified": "2026-07-28 17:35:31.074018",
+ "modified": "2026-10-21 18:13:06.783854",
  "modified_by": "Administrator",
  "module": "PPGPL Dashboard",
  "name": "sales-marketing-dash",
  "owner": "Administrator",
  "page_name": "sales-marketing-dash",
- "roles": [],
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "Management Dashboard"
+  }
+ ],
  "script": null,
  "standard": "Yes",
  "style": null,

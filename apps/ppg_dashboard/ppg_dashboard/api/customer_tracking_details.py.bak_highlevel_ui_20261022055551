@@ -1,0 +1,266 @@
+import frappe
+
+
+def _fields(doctype):
+    if not frappe.db.exists("DocType", doctype):
+        return set()
+    return {f.fieldname for f in frappe.get_meta(doctype).fields}
+
+
+def _public_file(path):
+    # A private attachment must never be exposed to a guest customer.
+    if isinstance(path, str) and path.startswith("/files/"):
+        return path
+    return None
+
+
+def _num(value):
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def build_details(order_name):
+    # Customer-visible product list and catalog images.
+    soi_fields = _fields("Sales Order Item")
+    wanted = [f for f in (
+        "name", "item_code", "item_name", "qty", "delivered_qty"
+    ) if f in soi_fields]
+
+    rows = frappe.get_all(
+        "Sales Order Item",
+        filters={"parent": order_name, "parenttype": "Sales Order"},
+        fields=wanted,
+        limit_page_length=200,
+    )
+    items = []
+    for row in rows:
+        image = None
+        if row.get("item_code") and frappe.db.exists("Item", row.item_code):
+            image = _public_file(
+                frappe.db.get_value("Item", row.item_code, "image")
+            )
+        items.append({
+            "item": row.get("item_name") or row.get("item_code") or "Product",
+            "qty": _num(row.get("qty")),
+            "delivered_qty": _num(row.get("delivered_qty")),
+            "image": image,
+        })
+
+    # Find this Sales Order's Work Orders.
+    wo_fields = _fields("Work Order")
+    names = [f for f in (
+        "name", "status", "qty", "produced_qty", "production_item"
+    ) if f in wo_fields]
+    work_orders = frappe.get_all(
+        "Work Order",
+        filters={"sales_order": order_name, "docstatus": ["!=", 2]},
+        fields=names,
+        order_by="modified desc",
+        limit_page_length=200,
+    ) if names else []
+
+    # Prefer a Work Order that is currently in production.
+    work_orders.sort(key=lambda w: (
+        0 if str(w.get("status") or "").lower() == "in process"
+        else 1 if str(w.get("status") or "").lower() == "not started"
+        else 2
+    ))
+    wo = work_orders[0] if work_orders else None
+    operations, cards = [], []
+
+    if wo and frappe.db.exists("DocType", "Work Order Operation"):
+        op_fields = _fields("Work Order Operation")
+        get_fields = ["parent"] + [
+            f for f in (
+                "operation", "workstation", "status",
+                "completed_qty", "sequence_id"
+            ) if f in op_fields
+        ]
+        operations = frappe.get_all(
+            "Work Order Operation",
+            filters={
+                "parent": wo.name,
+                "parenttype": "Work Order",
+                "parentfield": "operations",
+            },
+            fields=get_fields,
+            order_by="sequence_id asc",
+            limit_page_length=300,
+        )
+
+    jc_fields = _fields("Job Card")
+    if wo and jc_fields:
+        get_fields = [
+            f for f in (
+                "name", "work_order", "operation", "workstation",
+                "status", "total_completed_qty", "for_quantity",
+                "custom_customer_tracking_image", "modified"
+            ) if f in jc_fields or f == "modified"
+        ]
+        cards = frappe.get_all(
+            "Job Card",
+            filters={"work_order": wo.name, "docstatus": ["!=", 2]},
+            fields=get_fields,
+            order_by="modified desc",
+            limit_page_length=500,
+        )
+
+    # The current WIP Job Card takes priority. Otherwise use the first
+    # incomplete Work Order operation and its matching Job Card.
+    card = next(
+        (c for c in cards
+         if str(c.get("status") or "").lower() == "work in progress"),
+        None,
+    )
+
+    if card:
+        operation = next(
+            (o for o in operations if o.get("operation") == card.get("operation")),
+            None,
+        )
+    else:
+        operation = next(
+            (o for o in operations
+             if str(o.get("status") or "").lower() != "completed"),
+            operations[-1] if operations else None,
+        )
+        matches = [
+            c for c in cards
+            if operation and c.get("operation") == operation.get("operation")
+        ]
+        card = matches[0] if matches else None
+
+    stage = (
+        (card.get("operation") if card else None)
+        or (operation.get("operation") if operation else None)
+    )
+    workstation = (
+        (card.get("workstation") if card else None)
+        or (operation.get("workstation") if operation else None)
+    )
+    raw_status = (
+        (card.get("status") if card else None)
+        or (operation.get("status") if operation else None)
+        or (wo.get("status") if wo else None)
+        or "Not Started"
+    )
+
+    status_text = str(raw_status).replace("_", " ").title()
+    done = _num(card.get("total_completed_qty")) if card else (
+        _num(operation.get("completed_qty")) if operation else 0
+    )
+    target = _num(card.get("for_quantity")) if card else (
+        _num(wo.get("qty")) if wo else 0
+    )
+    progress = min(100.0, max(0.0, done / target * 100)) if target else 0
+
+    photo = _public_file(
+        card.get("custom_customer_tracking_image") if card else None
+    )
+    production = {
+        "stage": stage or (
+            "Production completed" if wo and wo.get("status") == "Completed"
+            else "Awaiting production planning"
+        ),
+        "workstation": workstation,
+        "status": status_text if wo else "Not Started",
+        "photo_url": photo,
+        "photo_note": None if photo else (
+            "No customer-shareable photo has been uploaded for this operation yet."
+        ),
+        "completed_qty": done,
+        "stage_qty": target,
+        "progress_percent": round(progress, 1),
+        "operations": [
+            {
+                "operation": o.get("operation") or "Production operation",
+                "workstation": o.get("workstation"),
+                "status": str(o.get("status") or "Pending").title(),
+                "state": (
+                    "completed"
+                    if str(o.get("status") or "").lower() == "completed"
+                    else "active"
+                    if str(o.get("status") or "").lower() == "work in progress"
+                    else "pending"
+                ),
+            }
+            for o in operations
+        ],
+    }
+
+    # Submitted Sales Invoices linked to this Sales Order. Shared invoices
+    # are allocated proportionally by their item amounts.
+    so_fields = _fields("Sales Order")
+    summary_fields = [
+        f for f in ("grand_total", "currency", "advance_paid")
+        if f in so_fields
+    ]
+    so = frappe.db.get_value(
+        "Sales Order", order_name, summary_fields, as_dict=True
+    ) or frappe._dict()
+
+    invoice_rows = []
+    if (
+        frappe.db.exists("DocType", "Sales Invoice")
+        and frappe.db.exists("DocType", "Sales Invoice Item")
+    ):
+        invoice_rows = frappe.db.sql("""
+            SELECT si.name,
+                   COALESCE(si.grand_total, 0) AS invoice_total,
+                   COALESCE(si.outstanding_amount, 0) AS outstanding_amount,
+                   COALESCE((
+                       SELECT SUM(sii.amount)
+                       FROM `tabSales Invoice Item` sii
+                       WHERE sii.parent = si.name AND sii.sales_order = %s
+                   ), 0) AS linked_amount,
+                   COALESCE((
+                       SELECT SUM(sii2.amount)
+                       FROM `tabSales Invoice Item` sii2
+                       WHERE sii2.parent = si.name
+                   ), 0) AS total_item_amount
+            FROM `tabSales Invoice` si
+            WHERE si.docstatus = 1
+              AND COALESCE(si.is_return, 0) = 0
+              AND EXISTS (
+                  SELECT 1 FROM `tabSales Invoice Item` sii3
+                  WHERE sii3.parent = si.name AND sii3.sales_order = %s
+              )
+        """, (order_name, order_name), as_dict=True)
+
+    invoiced, paid_from_invoices = 0.0, 0.0
+    for inv in invoice_rows:
+        linked = _num(inv.get("linked_amount"))
+        item_total = _num(inv.get("total_item_amount"))
+        if linked <= 0:
+            continue
+        ratio = min(1.0, linked / item_total) if item_total > 0 else 1.0
+        invoice_total = _num(inv.get("invoice_total")) * ratio
+        invoice_due = _num(inv.get("outstanding_amount")) * ratio
+        invoiced += invoice_total
+        paid_from_invoices += max(0.0, invoice_total - invoice_due)
+
+    order_total = _num(so.get("grand_total"))
+    paid = paid_from_invoices if invoice_rows else _num(so.get("advance_paid"))
+    paid = min(order_total, max(0.0, paid))
+    balance = max(0.0, order_total - paid)
+
+    payment_status = (
+        "Paid" if order_total > 0 and balance <= 0.01
+        else "Partially paid" if paid > 0.01
+        else "Payment pending"
+    )
+
+    return {
+        "items": items,
+        "production": production,
+        "payment": {
+            "currency": so.get("currency") or "INR",
+            "order_total": round(order_total, 2),
+            "invoiced_amount": round(invoiced, 2),
+            "paid_amount": round(paid, 2),
+            "balance_due": round(balance, 2),
+            "status": payment_status,
+        },
+    }

@@ -1,0 +1,70 @@
+/* PPG: darker status badges only; keep page backgrounds and buttons unchanged */
+.indicator-pill.green,
+.indicator-pill-right.green,
+.badge-success,
+.badge.bg-success {
+  background-color: #166534 !important;
+  border-color: #14532d !important;
+  color: #ffffff !important;
+}
+
+.indicator-pill.orange,
+.indicator-pill-right.orange,
+.badge-warning,
+.badge.bg-warning {
+  background-color: #92400e !important;
+  border-color: #78350f !important;
+  color: #ffffff !important;
+}
+
+.indicator-pill.red,
+.indicator-pill-right.red,
+.badge-danger,
+.badge.bg-danger {
+  background-color: #991b1b !important;
+  border-color: #7f1d1d !important;
+  color: #ffffff !important;
+}
+
+.indicator-pill.blue,
+.indicator-pill-right.blue,
+.badge-primary,
+.badge.bg-primary {
+  background-color: #1e40af !important;
+  border-color: #1e3a8a !important;
+  color: #ffffff !important;
+}
+
+.indicator-pill.purple,
+.indicator-pill-right.purple {
+  background-color: #6b21a8 !important;
+  border-color: #581c87 !important;
+  color: #ffffff !important;
+}
+
+.indicator-pill.cyan,
+.indicator-pill-right.cyan,
+.badge-info,
+.badge.bg-info {
+  background-color: #155e75 !important;
+  border-color: #164e63 !important;
+  color: #ffffff !important;
+}
+
+.indicator-pill.yellow,
+.indicator-pill-right.yellow {
+  background-color: #854d0e !important;
+  border-color: #713f12 !important;
+  color: #ffffff !important;
+}
+
+.indicator-pill.gray,
+.indicator-pill-right.gray,
+.indicator-pill.grey,
+.indicator-pill-right.grey,
+.badge-secondary,
+.badge.bg-secondary {
+  background-color: #374151 !important;
+  border-color: #1f2937 !important;
+  color: #ffffff !important;
+}

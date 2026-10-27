@@ -1,0 +1,23 @@
+{
+ "content": null,
+ "creation": "2026-10-14 14:18:09.587058",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-10-21 15:07:42.488321",
+ "modified_by": "Administrator",
+ "module": "PPGPL Dashboard",
+ "name": "management-dashboard",
+ "owner": "Administrator",
+ "page_name": "management-dashboard",
+ "roles": [
+  {
+   "role": "Management Dashboard"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Management Dashboard"
+}
