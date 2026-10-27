@@ -1,0 +1,70 @@
+{
+ "actions": [],
+ "creation": "2026-10-13 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "document_type",
+  "category",
+  "l2_limit",
+  "l3_limit",
+  "note"
+ ],
+ "fields": [
+  {
+   "fieldname": "document_type",
+   "fieldtype": "Select",
+   "label": "Document",
+   "options": "Payment Entry\nPurchase Order\nJournal Entry\nExpense Claim\nEmployee Advance",
+   "in_list_view": 1,
+   "reqd": 1,
+   "columns": 3
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "label": "Category",
+   "options": "All\nAgainst Invoice\nAdvance\nNon-PO\nRecurring Bill\nStatutory\nEmployee\nRefund\nInternal Transfer\nInter-company",
+   "default": "All",
+   "in_list_view": 1,
+   "reqd": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "l2_limit",
+   "fieldtype": "Currency",
+   "label": "L2 approves up to",
+   "in_list_view": 1,
+   "columns": 2,
+   "description": "0 = L2 cannot approve this category"
+  },
+  {
+   "fieldname": "l3_limit",
+   "fieldtype": "Currency",
+   "label": "L3 approves up to",
+   "in_list_view": 1,
+   "columns": 2,
+   "description": "0 = L3 cannot approve; amounts above both limits go to the CMD"
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Data",
+   "label": "Note",
+   "in_list_view": 1,
+   "columns": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-13 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "PPGPL Finance",
+ "name": "PPGPL Approval Limit",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1,
+ "editable_grid": 1
+}

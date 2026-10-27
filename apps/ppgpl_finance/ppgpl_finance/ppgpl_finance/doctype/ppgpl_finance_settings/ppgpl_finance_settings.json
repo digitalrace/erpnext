@@ -1,0 +1,350 @@
+{
+ "actions": [],
+ "creation": "2026-10-13 09:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "approvers_section",
+  "l1_user",
+  "l1_name",
+  "l2_user",
+  "l2_name",
+  "column_break_appr",
+  "l3_user",
+  "l3_name",
+  "cmd_user",
+  "cmd_name",
+  "rollout_section",
+  "rollout_phase",
+  "limits_section",
+  "approval_limits",
+  "cmd_rules_section",
+  "first_order_needs_cmd",
+  "capex_needs_cmd",
+  "column_break_cmd",
+  "off_cycle_needs_cmd",
+  "payment_section",
+  "payment_days",
+  "proposal_horizon_days",
+  "column_break_pay",
+  "msme_alert_days",
+  "require_approved_bank_account",
+  "controls_section",
+  "enforce_po_and_receipt",
+  "project_mandatory",
+  "petty_cash_section",
+  "petty_cash_floats",
+  "alerts_section",
+  "send_daily_cash",
+  "send_daily_exceptions",
+  "column_break_alerts",
+  "send_weekly_review",
+  "send_payment_run_reminder",
+  "extra_alert_emails",
+  "setup_section",
+  "repair_setup"
+ ],
+ "fields": [
+  {
+   "fieldname": "approvers_section",
+   "fieldtype": "Section Break",
+   "label": "Approvers",
+   "description": "Saving this page gives each person the ERPNext roles for their level (Section 2 of the SOP)."
+  },
+  {
+   "fieldname": "l1_user",
+   "fieldtype": "Link",
+   "label": "L1 – Accountant (maker)",
+   "options": "User"
+  },
+  {
+   "fieldname": "l1_name",
+   "fieldtype": "Data",
+   "label": "L1 name",
+   "fetch_from": "l1_user.full_name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "l2_user",
+   "fieldtype": "Link",
+   "label": "L2 – Admin Director (checker)",
+   "options": "User"
+  },
+  {
+   "fieldname": "l2_name",
+   "fieldtype": "Data",
+   "label": "L2 name",
+   "fetch_from": "l2_user.full_name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_appr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "l3_user",
+   "fieldtype": "Link",
+   "label": "L3 – Director, Business Development & Finance",
+   "options": "User"
+  },
+  {
+   "fieldname": "l3_name",
+   "fieldtype": "Data",
+   "label": "L3 name",
+   "fetch_from": "l3_user.full_name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cmd_user",
+   "fieldtype": "Link",
+   "label": "L4 – CMD",
+   "options": "User"
+  },
+  {
+   "fieldname": "cmd_name",
+   "fieldtype": "Data",
+   "label": "CMD name",
+   "fetch_from": "cmd_user.full_name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rollout_section",
+   "fieldtype": "Section Break",
+   "label": "Rollout phase (SOP Section 12)"
+  },
+  {
+   "fieldname": "rollout_phase",
+   "fieldtype": "Select",
+   "label": "Current phase",
+   "options": "Phase 1 - CMD approves all\nPhase 2 - Half limits\nPhase 3 - Full limits",
+   "default": "Phase 1 - CMD approves all",
+   "reqd": 1,
+   "description": "Phase 1 sends every payment to the CMD. Phase 2 applies half of each limit below. Phase 3 applies the full limits."
+  },
+  {
+   "fieldname": "limits_section",
+   "fieldtype": "Section Break",
+   "label": "Approval limits (SOP Section 3)",
+   "description": "Rupees per document, including GST. Above both limits, the CMD approves."
+  },
+  {
+   "fieldname": "approval_limits",
+   "fieldtype": "Table",
+   "label": "Approval limits",
+   "options": "PPGPL Approval Limit"
+  },
+  {
+   "fieldname": "cmd_rules_section",
+   "fieldtype": "Section Break",
+   "label": "Always routed to the CMD"
+  },
+  {
+   "fieldname": "first_order_needs_cmd",
+   "fieldtype": "Check",
+   "label": "First purchase order with a new supplier",
+   "default": "1"
+  },
+  {
+   "fieldname": "capex_needs_cmd",
+   "fieldtype": "Check",
+   "label": "Purchase orders with fixed-asset items (capex)",
+   "default": "1"
+  },
+  {
+   "fieldname": "column_break_cmd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "off_cycle_needs_cmd",
+   "fieldtype": "Check",
+   "label": "Off-cycle (urgent) payments",
+   "default": "1"
+  },
+  {
+   "fieldname": "payment_section",
+   "fieldtype": "Section Break",
+   "label": "Payment run (SOP Section 5)"
+  },
+  {
+   "fieldname": "payment_days",
+   "fieldtype": "Data",
+   "label": "Payment days",
+   "default": "Tuesday, Friday",
+   "reqd": 1,
+   "description": "Comma-separated weekdays. Payments released on other days are logged as off-cycle."
+  },
+  {
+   "fieldname": "proposal_horizon_days",
+   "fieldtype": "Int",
+   "label": "Proposal covers invoices due within (days)",
+   "default": "7"
+  },
+  {
+   "fieldname": "column_break_pay",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "msme_alert_days",
+   "fieldtype": "Int",
+   "label": "Alert on MSME dues older than (days)",
+   "default": "30"
+  },
+  {
+   "fieldname": "require_approved_bank_account",
+   "fieldtype": "Check",
+   "label": "Supplier bank payments need an approved supplier bank account",
+   "default": "1"
+  },
+  {
+   "fieldname": "controls_section",
+   "fieldtype": "Section Break",
+   "label": "ERPNext controls applied on save"
+  },
+  {
+   "fieldname": "enforce_po_and_receipt",
+   "fieldtype": "Check",
+   "label": "Purchase Order and Purchase Receipt required before Purchase Invoice",
+   "default": "1"
+  },
+  {
+   "fieldname": "project_mandatory",
+   "fieldtype": "Check",
+   "label": "Project mandatory on Purchase Order and Purchase Invoice",
+   "default": "1"
+  },
+  {
+   "fieldname": "petty_cash_section",
+   "fieldtype": "Section Break",
+   "label": "Petty cash floats (SOP Section 6)"
+  },
+  {
+   "fieldname": "petty_cash_floats",
+   "fieldtype": "Table",
+   "label": "Petty cash floats",
+   "options": "PPGPL Petty Cash Float"
+  },
+  {
+   "fieldname": "alerts_section",
+   "fieldtype": "Section Break",
+   "label": "Reports and alerts (SOP Section 9)"
+  },
+  {
+   "fieldname": "send_daily_cash",
+   "fieldtype": "Check",
+   "label": "Daily cash position, 10 am (CMD, L2)",
+   "default": "1"
+  },
+  {
+   "fieldname": "send_daily_exceptions",
+   "fieldtype": "Check",
+   "label": "Daily exceptions digest, 9:30 am (CMD)",
+   "default": "1"
+  },
+  {
+   "fieldname": "column_break_alerts",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "send_weekly_review",
+   "fieldtype": "Check",
+   "label": "Weekly finance review, Monday 8:30 am (CMD, L2, L3)",
+   "default": "1"
+  },
+  {
+   "fieldname": "send_payment_run_reminder",
+   "fieldtype": "Check",
+   "label": "Pending approvals, 6 pm before each payment day (L3, CMD)",
+   "default": "1"
+  },
+  {
+   "fieldname": "extra_alert_emails",
+   "fieldtype": "Small Text",
+   "label": "Also send alerts to (emails, comma-separated)"
+  },
+  {
+   "fieldname": "setup_section",
+   "fieldtype": "Section Break",
+   "label": "Setup"
+  },
+  {
+   "fieldname": "repair_setup",
+   "fieldtype": "Button",
+   "label": "Re-run setup (roles, fields, workflows)",
+   "description": "Recreates the PPGPL workflows and fields. Use after an upgrade, or if a workflow was edited by mistake."
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-13 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "PPGPL Finance",
+ "name": "PPGPL Finance Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "role": "System Manager",
+   "read": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "export": 1,
+   "share": 0,
+   "write": 1,
+   "create": 1,
+   "delete": 0
+  },
+  {
+   "role": "CMD Approver",
+   "read": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "export": 1,
+   "share": 0,
+   "write": 0,
+   "create": 0,
+   "delete": 0
+  },
+  {
+   "role": "Finance Checker",
+   "read": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "export": 1,
+   "share": 0,
+   "write": 0,
+   "create": 0,
+   "delete": 0
+  },
+  {
+   "role": "Finance Approver L3",
+   "read": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "export": 1,
+   "share": 0,
+   "write": 0,
+   "create": 0,
+   "delete": 0
+  },
+  {
+   "role": "Finance Maker",
+   "read": 1,
+   "print": 1,
+   "email": 1,
+   "report": 1,
+   "export": 1,
+   "share": 0,
+   "write": 0,
+   "create": 0,
+   "delete": 0
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "issingle": 1,
+ "track_changes": 1
+}
